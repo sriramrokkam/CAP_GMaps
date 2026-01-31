@@ -1,0 +1,231 @@
+{
+  "_version": "1.76.0",
+  "sap.app": {
+    "id": "routes.routes",
+    "type": "application",
+    "i18n": "i18n/i18n.properties",
+    "applicationVersion": {
+      "version": "0.0.1"
+    },
+    "title": "{{appTitle}}",
+    "description": "{{appDescription}}",
+    "resources": "resources.json",
+    "sourceTemplate": {
+      "id": "@sap/generator-fiori:lrop",
+      "version": "1.20.0",
+      "toolsId": "4f292ecf-4689-4272-a12c-ed2f1336ddaf"
+    },
+    "dataSources": {
+      "mainService": {
+        "uri": "/odata/v4/gmaps/",
+        "type": "OData",
+        "settings": {
+          "annotations": [],
+          "odataVersion": "4.0"
+        }
+      }
+    }
+  },
+  "sap.ui": {
+    "technology": "UI5",
+    "icons": {
+      "icon": "",
+      "favIcon": "",
+      "phone": "",
+      "phone@2": "",
+      "tablet": "",
+      "tablet@2": ""
+    },
+    "deviceTypes": {
+      "desktop": true,
+      "tablet": true,
+      "phone": true
+    }
+  },
+  "sap.ui5": {
+    "flexEnabled": true,
+    "dependencies": {
+      "minUI5Version": "1.144.0",
+      "libs": {
+        "sap.m": {},
+        "sap.ui.core": {},
+        "sap.fe.templates": {},
+        "sap.f": {}
+      }
+    },
+    "contentDensities": {
+      "compact": true,
+      "cozy": true
+    },
+    "models": {
+      "i18n": {
+        "type": "sap.ui.model.resource.ResourceModel",
+        "settings": {
+          "bundleName": "routes.routes.i18n.i18n"
+        }
+      },
+      "": {
+        "dataSource": "mainService",
+        "preload": true,
+        "settings": {
+          "operationMode": "Server",
+          "autoExpandSelect": true,
+          "earlyRequests": true
+        }
+      },
+      "@i18n": {
+        "type": "sap.ui.model.resource.ResourceModel",
+        "uri": "i18n/i18n.properties"
+      }
+    },
+    "resources": {
+      "css": []
+    },
+    "routing": {
+      "config": {
+        "flexibleColumnLayout": {
+          "defaultTwoColumnLayoutType": "TwoColumnsMidExpanded",
+          "defaultThreeColumnLayoutType": "ThreeColumnsEndExpanded"
+        },
+        "routerClass": "sap.f.routing.Router"
+      },
+      "routes": [
+        {
+          "pattern": ":?query:",
+          "name": "RouteDirectionsList",
+          "target": [
+            "RouteDirectionsList"
+          ]
+        },
+        {
+          "pattern": "RouteDirections({key}):?query:",
+          "name": "RouteDirectionsObjectPage",
+          "target": [
+            "RouteDirectionsList",
+            "RouteDirectionsObjectPage"
+          ]
+        },
+        {
+          "name": "RouteDirections_stepsObjectPage",
+          "pattern": "RouteDirections({key})/steps({stepsKey}):?query:",
+          "target": [
+            "RouteDirectionsList",
+            "RouteDirectionsObjectPage",
+            "RouteDirections_stepsObjectPage"
+          ]
+        }
+      ],
+      "targets": {
+        "RouteDirectionsList": {
+          "type": "Component",
+          "id": "RouteDirectionsList",
+          "name": "sap.fe.templates.ListReport",
+          "options": {
+            "settings": {
+              "contextPath": "/RouteDirections",
+              "variantManagement": "Page",
+              "navigation": {
+                "RouteDirections": {
+                  "detail": {
+                    "route": "RouteDirectionsObjectPage"
+                  }
+                }
+              },
+              "controlConfiguration": {
+                "@com.sap.vocabularies.UI.v1.LineItem": {
+                  "tableSettings": {
+                    "type": "ResponsiveTable"
+                  },
+                  "actions": {
+                    "DataFieldForAction::GmapsService.EntityContainer::getDirections": {
+                      "enableOnSelect": "single"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "controlAggregation": "beginColumnPages",
+          "contextPattern": ""
+        },
+        "RouteDirectionsObjectPage": {
+          "type": "Component",
+          "id": "RouteDirectionsObjectPage",
+          "name": "sap.fe.templates.ObjectPage",
+          "options": {
+            "settings": {
+              "editableHeaderContent": false,
+              "contextPath": "/RouteDirections",
+              "navigation": {
+                "steps": {
+                  "detail": {
+                    "route": "RouteDirections_stepsObjectPage"
+                  }
+                }
+              },
+              "controlConfiguration": {
+                "steps/@com.sap.vocabularies.UI.v1.LineItem#RouteSteps": {
+                  "tableSettings": {
+                    "enableExport": true,
+                    "personalization": {
+                      "sort": true
+                    },
+                    "popinLayout": "GridLarge"
+                  }
+                }
+              },
+              "content": {
+                "header": {
+                  "anchorBarVisible": true
+                }
+              }
+            }
+          },
+          "controlAggregation": "midColumnPages",
+          "contextPattern": "/RouteDirections({key})"
+        },
+        "RouteDirections_stepsObjectPage": {
+          "type": "Component",
+          "id": "RouteDirections_stepsObjectPage",
+          "name": "sap.fe.templates.ObjectPage",
+          "controlAggregation": "endColumnPages",
+          "options": {
+            "settings": {
+              "navigation": {},
+              "contextPath": "/RouteDirections/steps",
+              "content": {
+                "body": {
+                  "sections": {
+                    "DisplayGmap": {
+                      "template": "routes.routes.ext.fragment.DisplayGmap",
+                      "position": {
+                        "placement": "After",
+                        "anchor": "Steps"
+                      },
+                      "title": "DisplayGMap"
+                    }
+                  }
+                },
+                "header": {
+                  "anchorBarVisible": true,
+                  "visible": true
+                }
+              }
+            }
+          },
+          "contextPattern": "/RouteDirections({key})/steps({stepsKey})"
+        }
+      }
+    },
+    "rootView": {
+      "viewName": "sap.fe.templates.RootContainer.view.Fcl",
+      "type": "XML",
+      "async": true,
+      "id": "appRootView"
+    }
+  },
+  "sap.fiori": {
+    "registrationIds": [],
+    "archeType": "transactional"
+  }
+}

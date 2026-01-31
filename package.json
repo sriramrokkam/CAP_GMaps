@@ -1,0 +1,44 @@
+{
+  "name": "gmaps-app",
+  "version": "1.0.0",
+  "description": "A simple CAP project.",
+  "dependencies": {
+    "@sap/cds": "^9",
+    "axios": "^1",
+    "express": "^4",
+    "uuid": "^11"
+  },
+  "devDependencies": {
+    "@cap-js/sqlite": "^2",
+    "@sap/cds-dk": "^9",
+    "cds-plugin-ui5": "^0.13.0",
+    "rimraf": "^5.0.5"
+  },
+  "scripts": {
+    "start": "cds-serve",
+    "watch-routes": "cds watch --open routes.routes/index.html?sap-ui-xx-viewCache=false --livereload false"
+  },
+  "private": true,
+  "workspaces": [
+    "app/*"
+  ],
+  "cds": {
+    "requires": {
+      "db": {
+        "kind": "sqlite",
+        "credentials": {
+          "database": "db.sqlite"
+        }
+      },
+      "GoogleAPI-SR": {
+        "kind": "rest",
+        "credentials": {
+          "url": "https://maps.googleapis.com"
+        }
+      }
+    }
+  },
+  "sapux": [
+    "app/routes"
+  ]
+}

@@ -1,0 +1,10 @@
+<core:FragmentDefinition xmlns:core="sap.ui.core" xmlns="sap.m" xmlns:macros="sap.fe.macros">
+	<VBox id="mapContainer" core:require="{ handler: 'routes/routes/ext/fragment/DisplayGmap'}">
+		<Title id="mapTitle" text="Step Location on Map" class="sapUiSmallMarginBottom"/>
+		<Text id="mapCoordinates" text="Start: {startLat}, {startLng} → End: {endLat}, {endLng}" class="sapUiTinyMarginBottom"/>
+		<VBox id="mapWrapper" height="500px" width="100%">
+			<core:HTML id="googleMapContainer" content='&lt;div id="googleMap" style="width:100%;min-width:400px;height:450px;min-height:450px;border:2px solid #0854A0;background-color:#e5e3df;position:relative;overflow:hidden;"&gt;&lt;div id="mapPlaceholder" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;color:#666;"&gt;&lt;p&gt;Loading map...&lt;/p&gt;&lt;/div&gt;&lt;/div&gt;' afterRendering="handler.onMapContainerRendered"/>
+		</VBox>
+		<Button id="refreshMapBtn" text="Refresh Map" press="handler.onRefreshMap" icon="sap-icon://refresh" type="Transparent" class="sapUiTinyMarginTop"/>
+	</VBox>
+</core:FragmentDefinition>

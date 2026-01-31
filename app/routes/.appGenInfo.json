@@ -1,0 +1,33 @@
+{
+  "generationParameters": {
+    "generationDate": "Fri Jan 23 2026 20:26:13 GMT+0530 (India Standard Time)",
+    "generatorPlatform": "Visual Studio Code",
+    "serviceType": "Local CAP",
+    "metadataFilename": "",
+    "serviceUrl": "http://localhost:4004/odata/v4/gmaps/",
+    "appName": "routes",
+    "appTitle": "Routes",
+    "appDescription": "Route Directions",
+    "appNamespace": "routes",
+    "ui5Theme": "sap_horizon",
+    "ui5Version": "1.144.0",
+    "enableCodeAssist": false,
+    "enableEslint": false,
+    "enableTypeScript": false,
+    "showMockDataInfo": false,
+    "generatorVersion": "1.20.0",
+    "template": "List Report Page V4",
+    "generatorName": "SAP Fiori Application Generator",
+    "entityRelatedConfig": [
+      {
+        "type": "Main Entity",
+        "value": "RouteDirections"
+      },
+      {
+        "type": "Navigation Entity",
+        "value": "steps"
+      }
+    ],
+    "launchText": "To launch the generated app, start your CAP project:  and navigate to the following location in your browser:\n\nhttp://localhost:4004/routes.routes/index.html"
+  }
+}
