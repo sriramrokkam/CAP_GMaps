@@ -24,5 +24,5 @@ server:
     - name: fiori-tools-preview
       afterMiddleware: fiori-tools-appreload
       configuration:
-        flp:
-          theme: sap_horizon
+        component: routes.routes
+        ui5Theme: sap_horizon
