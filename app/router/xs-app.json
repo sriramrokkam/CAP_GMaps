@@ -1,0 +1,19 @@
+{
+  "welcomeFile": "/",
+  "authenticationMethod": "route",
+  "sessionTimeout": 20,
+  "routes": [
+    {
+      "source": "^/odata/v4/gmaps/(.*)$",
+      "target": "/odata/v4/gmaps/$1",
+      "destination": "srv-api",
+      "authenticationType": "xsuaa",
+      "csrfProtection": false
+    },
+    {
+      "source": "^/(.*)$",
+      "localDir": ".",
+      "authenticationType": "none"
+    }
+  ]
+}
