@@ -1,6 +1,7 @@
 sap.ui.define([
-    "sap/m/MessageToast"
-], function(MessageToast) {
+    "sap/m/MessageToast",
+    "routes/routes/utils/Config"
+], function(MessageToast, Config) {
     'use strict';
 
     // Global variable to track if Google Maps script is already loaded
@@ -129,7 +130,8 @@ sap.ui.define([
                     return;
                 }
 
-                const apiKey = "AIzaSyBnJ6XNmu3vQE6Uay9BX7q1HV-Qz_N5eP4";
+                // Get API key from configuration
+                const apiKey = Config.getApiKey();
 
                 console.log("Loading Google Maps...");
                 
@@ -197,7 +199,8 @@ sap.ui.define([
                 mapContainer.innerHTML = '<div id="mapPlaceholder" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;color:#666;"><p>Refreshing map...</p></div>';
             }
             
-            const apiKey = "AIzaSyBnJ6XNmu3vQE6Uay9BX7q1HV-Qz_N5eP4";
+            // Get API key from configuration
+            const apiKey = Config.getApiKey();
             
             // Load Google Maps and render
             handler.loadGoogleMapsScript(apiKey)

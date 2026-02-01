@@ -1,0 +1,14 @@
+{
+  "name": "gmaps-app-approuter",
+  "version": "1.0.0",
+  "description": "AppRouter for gmaps-app",
+  "scripts": {
+    "start": "node node_modules/@sap/approuter/approuter.js"
+  },
+  "dependencies": {
+    "@sap/approuter": "^16"
+  },
+  "engines": {
+    "node": "^20"
+  }
+}

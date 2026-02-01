@@ -1,0 +1,30 @@
+{
+  "xsappname": "gmaps-app",
+  "tenant-mode": "dedicated",
+  "description": "Security profile of called application",
+  "scopes": [
+    {
+      "name": "$XSAPPNAME.gmaps_user",
+      "description": "User can access and use the Google Maps application"
+    }
+  ],
+  "role-templates": [
+    {
+      "name": "gmaps_user",
+      "description": "Google Maps User",
+      "scope-references": [
+        "$XSAPPNAME.gmaps_user"
+      ]
+    }
+  ],
+  "attributes": [],
+  "role-collections": [
+    {
+      "name": "GmapsUser",
+      "description": "Google Maps Application User",
+      "role-template-references": [
+        "$XSAPPNAME.gmaps_user"
+      ]
+    }
+  ]
+}

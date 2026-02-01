@@ -5,8 +5,8 @@
     {
       "source": "^/odata/(.*)$",
       "target": "/odata/$1",
-      "destination": "srv-api",
-      "authenticationType": "ias",
+      "destination": "gmaps-app-destination",
+      "authenticationType": "xsuaa",
       "csrfProtection": false
     },
     {
@@ -22,20 +22,10 @@
       "destination": "ui5"
     },
     {
-      "source": "^/logout-page.html$",
-      "service": "app-front",
-      "authenticationType": "none"
-    },
-    {
-      "source": "^/index.html$",
-      "service": "app-front",
-      "cacheControl": "no-cache, no-store, must-revalidate"
-    },
-    {
       "source": "^(.*)$",
       "target": "$1",
-      "service": "app-front",
-      "authenticationType": "ias"
+      "service": "html5-apps-repo-rt",
+      "authenticationType": "xsuaa"
     }
   ]
 }
