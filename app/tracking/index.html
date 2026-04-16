@@ -7,86 +7,129 @@
     <script id="sap-ui-bootstrap"
         src="https://sapui5.hana.ondemand.com/1.144.0/resources/sap-ui-core.js"
         data-sap-ui-theme="sap_horizon"
-        data-sap-ui-libs="sap.m, sap.ui.layout, sap.f"
+        data-sap-ui-libs="sap.m, sap.ui.layout, sap.f, sap.uxap"
         data-sap-ui-compatVersion="edge"
         data-sap-ui-async="true"
-        data-sap-ui-onInit="onInit"
-        data-sap-ui-resourceroots='{ "tracking": "./" }'>
+        data-sap-ui-onInit="onInit">
     </script>
     <style>
         body { margin: 0; padding: 0; }
-        .driverPage { min-height: 100vh; }
-        .detailRow { display: flex; justify-content: space-between; padding: 4px 0; }
-        .detailLabel { color: #6a6d70; font-size: 13px; }
-        .detailValue { font-weight: 600; font-size: 13px; text-align: right; max-width: 60%; }
-        .gpsCoordBox { background: #f5f6f7; border-radius: 8px; padding: 10px 14px; margin-top: 8px; font-family: monospace; font-size: 13px; }
-        .stepItem { border-bottom: 1px solid #e8e8e8; padding: 8px 0; }
-        .stepInstruction { font-size: 13px; }
-        .stepMeta { font-size: 12px; color: #6a6d70; margin-top: 2px; }
+        .gpsCoordBox { background: #f5f6f7; border-radius: 8px; padding: 10px 14px; margin: 8px 0; font-family: 'SFMono-Regular', Consolas, monospace; font-size: 0.8125rem; }
     </style>
     <script>
         function onInit() {
             sap.ui.require([
-                "sap/m/App", "sap/m/Page", "sap/m/Panel", "sap/m/VBox", "sap/m/HBox",
+                "sap/m/Shell", "sap/m/App", "sap/m/Page",
+                "sap/m/Panel", "sap/m/VBox", "sap/m/HBox",
                 "sap/m/Text", "sap/m/Title", "sap/m/Label", "sap/m/Button",
-                "sap/m/ObjectStatus", "sap/m/ObjectHeader", "sap/m/ObjectAttribute",
-                "sap/m/IconTabBar", "sap/m/IconTabFilter", "sap/m/List", "sap/m/StandardListItem",
-                "sap/m/MessageToast", "sap/m/MessageBox", "sap/m/BusyIndicator",
+                "sap/m/ObjectStatus", "sap/m/ObjectNumber",
+                "sap/m/IconTabBar", "sap/m/IconTabFilter",
+                "sap/m/List", "sap/m/StandardListItem", "sap/m/CustomListItem",
+                "sap/m/MessageToast", "sap/m/MessageBox", "sap/m/MessageStrip",
                 "sap/m/FlexBox", "sap/ui/core/Icon", "sap/ui/core/HTML",
-                "sap/m/MessageStrip"
-            ], function (App, Page, Panel, VBox, HBox, Text, Title, Label, Button,
-                         ObjectStatus, ObjectHeader, ObjectAttribute,
-                         IconTabBar, IconTabFilter, List, StandardListItem,
-                         MessageToast, MessageBox, BusyIndicator,
-                         FlexBox, Icon, HTML, MessageStrip) {
+                "sap/ui/layout/form/SimpleForm",
+                "sap/uxap/ObjectPageLayout", "sap/uxap/ObjectPageHeader",
+                "sap/uxap/ObjectPageSection", "sap/uxap/ObjectPageSubSection"
+            ], function (Shell, App, Page, Panel, VBox, HBox, Text, Title, Label, Button,
+                         ObjectStatus, ObjectNumber,
+                         IconTabBar, IconTabFilter,
+                         List, StandardListItem, CustomListItem,
+                         MessageToast, MessageBox, MessageStrip,
+                         FlexBox, Icon, HTML, SimpleForm,
+                         ObjectPageLayout, ObjectPageHeader,
+                         ObjectPageSection, ObjectPageSubSection) {
 
                 // ── State ──
                 var _assignmentId = window.location.hash.slice(1);
-                var _assignment = null;
                 var _latestPosition = null;
                 var _delivered = false;
                 var _watchId = null;
                 var _intervalId = null;
                 var _gpsCount = 0;
 
-                // ── GPS coordinate display ──
-                var gpsText = new Text({ text: "Waiting for GPS..." });
-                var gpsSendCount = new Text({ text: "" });
+                // ── Form fields (Delivery Details) ──
+                var fDelivery  = new Text({ text: "—" });
+                var fRoute     = new Text({ text: "—" });
+                var fSalesOrg  = new Text({ text: "—" });
+                var fCustomer  = new Text({ text: "—" });
+                var fShipPt    = new Text({ text: "—" });
+                var fCondition = new Text({ text: "—" });
+                var fGross     = new Text({ text: "—" });
+                var fNet       = new Text({ text: "—" });
+                var fDelDate   = new Text({ text: "—" });
+                var fFrom      = new Text({ text: "—", wrapping: true });
+                var fTo        = new Text({ text: "—", wrapping: true });
+                var fDistance   = new Text({ text: "—" });
+                var fDuration  = new Text({ text: "—" });
+                var fAssigned  = new Text({ text: "—" });
+                var fTruck     = new Text({ text: "—" });
+                var fMobile    = new Text({ text: "—" });
 
-                // ── Delivery info fields ──
-                var deliveryDocText = new Text({ text: "—" });
-                var customerText = new Text({ text: "—" });
-                var addressFromText = new Text({ text: "—" });
-                var addressToText = new Text({ text: "—" });
-                var distanceText = new Text({ text: "—" });
-                var durationText = new Text({ text: "—" });
-                var assignedAtText = new Text({ text: "—" });
-                var statusBadge = new ObjectStatus({ text: "Loading...", state: "Information" });
+                // ── GPS display ──
+                var gpsText = new Text({ text: "Waiting for GPS signal..." });
+                var gpsSendCount = new Text({ text: "" });
+                var gpsWarning = new MessageStrip({
+                    text: "Location access required. Please enable GPS or use Simulate GPS for testing.",
+                    type: "Warning", showIcon: true, visible: false
+                });
+
+                // ── Status badge ──
+                var headerStatus = new ObjectStatus({ text: "Loading...", state: "Information" });
+
+                // ── Object Page Header ──
+                var opHeader = new ObjectPageHeader({
+                    objectTitle: "Loading...",
+                    objectSubtitle: "—",
+                    objectImageShape: "Circle",
+                    objectImageURI: "sap-icon://shipping-status",
+                    isObjectIconAlwaysVisible: true,
+                    isActionAreaAlwaysVisible: true
+                });
 
                 // ── Directions list ──
                 var directionsList = new List({
-                    noDataText: "No directions available",
+                    noDataText: "No directions available. Route may not be fetched yet.",
                     showSeparators: "Inner"
                 });
 
-                // ── Object Header ──
-                var objHeader = new ObjectHeader({
-                    title: "Loading...",
-                    icon: "sap-icon://shipping-status",
-                    responsive: true,
-                    fullScreenOptimized: true,
-                    statuses: [statusBadge]
+                // Delivery Details form
+                var deliveryForm = new SimpleForm({
+                    editable: false,
+                    layout: "ResponsiveGridLayout",
+                    labelSpanXL: 4, labelSpanL: 4, labelSpanM: 4, labelSpanS: 12,
+                    emptySpanXL: 0, emptySpanL: 0, emptySpanM: 0,
+                    columnsXL: 3, columnsL: 2, columnsM: 2,
+                    content: [
+                        new Label({ text: "Delivery Document" }), fDelivery,
+                        new Label({ text: "Delivery Route" }), fRoute,
+                        new Label({ text: "Sales Organization" }), fSalesOrg,
+                        new Label({ text: "Delivery Date" }), fDelDate,
+                        new Label({ text: "Ship-To Party" }), fCustomer,
+                        new Label({ text: "Shipping Point" }), fShipPt,
+                        new Label({ text: "Shipping Condition" }), fCondition,
+                        new Label({ text: "Gross Weight" }), fGross,
+                        new Label({ text: "Net Weight" }), fNet,
+                        new Label({ text: "Truck" }), fTruck,
+                        new Label({ text: "Driver Mobile" }), fMobile,
+                        new Label({ text: "Assigned At" }), fAssigned
+                    ]
                 });
 
-                // ── GPS Warning ──
-                var gpsWarning = new MessageStrip({
-                    text: "Location access required. Please enable GPS or use Simulate GPS below.",
-                    type: "Warning",
-                    showIcon: true,
-                    visible: false
+                // Route Details form
+                var routeForm = new SimpleForm({
+                    editable: false,
+                    layout: "ResponsiveGridLayout",
+                    labelSpanXL: 4, labelSpanL: 4, labelSpanM: 4, labelSpanS: 12,
+                    columnsXL: 2, columnsL: 2, columnsM: 1,
+                    content: [
+                        new Label({ text: "Origin" }), fFrom,
+                        new Label({ text: "Destination" }), fTo,
+                        new Label({ text: "Est. Distance" }), fDistance,
+                        new Label({ text: "Est. Duration" }), fDuration
+                    ]
                 });
 
-                // ── Simulate GPS Button ──
+                // Simulate GPS button
                 var simGpsBtn = new Button({
                     text: "Simulate GPS (Testing)",
                     icon: "sap-icon://locate-me",
@@ -103,12 +146,11 @@
                     }
                 });
 
-                // ── Confirm Delivery Button ──
+                // Confirm delivery button
                 var confirmBtn = new Button({
                     text: "Confirm Delivery",
                     icon: "sap-icon://complete",
                     type: "Accept",
-                    width: "100%",
                     visible: false,
                     press: function () {
                         MessageBox.confirm("Mark this delivery as completed?", {
@@ -125,12 +167,10 @@
                                     _delivered = true;
                                     if (_intervalId) { clearInterval(_intervalId); _intervalId = null; }
                                     if (_watchId) { navigator.geolocation.clearWatch(_watchId); _watchId = null; }
-                                    statusBadge.setText("DELIVERED");
-                                    statusBadge.setState("Success");
-                                    confirmBtn.setVisible(false);
-                                    simGpsBtn.setVisible(false);
+                                    headerStatus.setText("DELIVERED"); headerStatus.setState("Success");
+                                    confirmBtn.setVisible(false); simGpsBtn.setVisible(false);
                                     gpsWarning.setVisible(false);
-                                    completionPanel.setVisible(true);
+                                    completionStrip.setVisible(true);
                                 }).catch(function () {
                                     confirmBtn.setEnabled(true);
                                     MessageToast.show("Failed to confirm delivery. Please try again.");
@@ -140,108 +180,81 @@
                     }
                 });
 
-                // ── Completion panel ──
-                var completionPanel = new Panel({
-                    visible: false,
-                    content: [
-                        new VBox({
-                            alignItems: "Center",
-                            items: [
-                                new Icon({ src: "sap-icon://message-success", size: "3rem", color: "#2b7c2b" }),
-                                new Title({ text: "Delivery Complete", level: "H3" }).addStyleClass("sapUiSmallMarginTop"),
-                                new Text({ text: "Thank you! You can close this page." }).addStyleClass("sapUiTinyMarginTop")
-                            ]
-                        }).addStyleClass("sapUiMediumMargin")
-                    ]
+                var completionStrip = new MessageStrip({
+                    text: "Delivery Complete! Thank you. You can close this page.",
+                    type: "Success", showIcon: true, visible: false
                 });
 
-                // Helper to build a detail row
-                function detailRow(label, valueCtrl) {
-                    return new HBox({
-                        justifyContent: "SpaceBetween",
-                        width: "100%",
-                        items: [
-                            new Label({ text: label }).addStyleClass("detailLabel"),
-                            valueCtrl
-                        ]
-                    }).addStyleClass("sapUiTinyMarginTopBottom");
-                }
-
-                // ── Build Page ──
-                var page = new Page({
-                    showHeader: false,
-                    backgroundDesign: "Solid",
-                    content: [
-                        objHeader,
-
-                        // Delivery Details Panel
-                        new Panel({
-                            headerText: "Delivery Details",
-                            expandable: false,
-                            content: [
-                                new VBox({
-                                    items: [
-                                        detailRow("Delivery", deliveryDocText),
-                                        detailRow("Customer", customerText),
-                                        detailRow("From", addressFromText),
-                                        detailRow("To", addressToText),
-                                        detailRow("Distance", distanceText),
-                                        detailRow("Duration", durationText),
-                                        detailRow("Assigned", assignedAtText)
-                                    ]
-                                }).addStyleClass("sapUiSmallMarginBeginEnd")
+                // ── Object Page Layout (same as Fiori Elements Object Page) ──
+                var objectPage = new ObjectPageLayout({
+                    headerTitle: opHeader,
+                    headerContent: [
+                        new HBox({ items: [headerStatus] }).addStyleClass("sapUiSmallMarginBegin"),
+                        completionStrip
+                    ],
+                    sections: [
+                        new ObjectPageSection({
+                            title: "Delivery Details",
+                            subSections: [
+                                new ObjectPageSubSection({
+                                    blocks: [deliveryForm]
+                                })
                             ]
-                        }).addStyleClass("sapUiTinyMarginTop"),
-
-                        // GPS & Tracking Panel
-                        new Panel({
-                            headerText: "GPS Tracking",
-                            expandable: false,
-                            content: [
-                                new VBox({
-                                    items: [
-                                        gpsWarning,
+                        }),
+                        new ObjectPageSection({
+                            title: "Route Information",
+                            subSections: [
+                                new ObjectPageSubSection({
+                                    blocks: [routeForm]
+                                })
+                            ]
+                        }),
+                        new ObjectPageSection({
+                            title: "GPS Tracking",
+                            subSections: [
+                                new ObjectPageSubSection({
+                                    blocks: [
                                         new VBox({
-                                            items: [gpsText, gpsSendCount]
-                                        }).addStyleClass("gpsCoordBox"),
-                                        new HBox({
-                                            justifyContent: "Center",
-                                            items: [simGpsBtn]
-                                        }).addStyleClass("sapUiSmallMarginTop")
+                                            items: [
+                                                gpsWarning,
+                                                new VBox({ items: [gpsText, gpsSendCount] }).addStyleClass("gpsCoordBox"),
+                                                new HBox({
+                                                    items: [simGpsBtn, confirmBtn],
+                                                    justifyContent: "Start"
+                                                }).addStyleClass("sapUiSmallMarginTop sapUiSmallMarginBottom")
+                                            ]
+                                        })
                                     ]
-                                }).addStyleClass("sapUiSmallMarginBeginEnd")
+                                })
                             ]
-                        }).addStyleClass("sapUiTinyMarginTop"),
-
-                        // Directions Panel (collapsible)
-                        new Panel({
-                            headerText: "Turn-by-Turn Directions",
-                            expandable: true,
-                            expanded: false,
-                            content: [directionsList]
-                        }).addStyleClass("sapUiTinyMarginTop"),
-
-                        // Actions
-                        new VBox({
-                            items: [confirmBtn, completionPanel]
-                        }).addStyleClass("sapUiMediumMargin")
+                        }),
+                        new ObjectPageSection({
+                            title: "Turn-by-Turn Directions",
+                            subSections: [
+                                new ObjectPageSubSection({
+                                    blocks: [directionsList]
+                                })
+                            ]
+                        })
                     ]
                 });
 
-                var app = new App({ pages: [page] });
-                app.placeAt("content");
+                // Wrap in Shell for SAP Fiori look
+                var shell = new Shell({ app: new App({ pages: [new Page({ showHeader: false, content: [objectPage] })] }) });
+                shell.placeAt("content");
 
                 // ── GPS functions ──
                 function updateGpsDisplay() {
                     if (!_latestPosition) return;
-                    var lat = _latestPosition.latitude.toFixed(6);
-                    var lng = _latestPosition.longitude.toFixed(6);
-                    var spd = _latestPosition.speed ? (_latestPosition.speed * 3.6).toFixed(0) + " km/h" : "—";
-                    gpsText.setText("Lat: " + lat + "  |  Lng: " + lng + "  |  Speed: " + spd);
+                    gpsText.setText(
+                        "Lat: " + _latestPosition.latitude.toFixed(6) +
+                        "  |  Lng: " + _latestPosition.longitude.toFixed(6) +
+                        "  |  Speed: " + (_latestPosition.speed ? (_latestPosition.speed * 3.6).toFixed(0) + " km/h" : "—")
+                    );
                 }
 
-                function onPosition(position) {
-                    _latestPosition = position.coords;
+                function onPosition(pos) {
+                    _latestPosition = pos.coords;
                     updateGpsDisplay();
                     gpsWarning.setVisible(false);
                 }
@@ -255,7 +268,6 @@
                     if (!_latestPosition || _delivered) return;
                     _gpsCount++;
                     gpsSendCount.setText("Updates sent: " + _gpsCount + "  |  Last: " + new Date().toLocaleTimeString());
-
                     fetch("/odata/v4/tracking/updateLocation", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
@@ -269,119 +281,111 @@
                     }).catch(function () {});
                 }
 
-                // ── Format date ──
                 function fmtDate(iso) {
                     if (!iso) return "—";
                     var d = new Date(iso);
                     return d.toLocaleDateString() + " " + d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
                 }
 
-                // ── Fetch delivery details from EWM ──
+                // ── Load delivery details from EWM ──
                 function loadDeliveryDetails(deliveryDoc) {
                     fetch("/odata/v4/ewm/OutboundDeliveries('" + deliveryDoc + "')", {
                         headers: { "Authorization": "Basic YWxpY2U6YWxpY2U=" }
                     }).then(function (r) { return r.ok ? r.json() : null; })
-                      .then(function (del) {
-                        if (!del) return;
-                        customerText.setText(del.ShipToParty || "—");
+                      .then(function (d) {
+                        if (!d) return;
+                        fDelivery.setText(d.DeliveryDocument || "—");
+                        fRoute.setText(d.ActualDeliveryRoute || "—");
+                        fSalesOrg.setText(d.SalesOrganization || "—");
+                        fCustomer.setText(d.ShipToParty || "—");
+                        fShipPt.setText(d.ShippingPoint || "—");
+                        fCondition.setText(d.ShippingCondition || "—");
+                        fGross.setText(d.HeaderGrossWeight != null ? String(d.HeaderGrossWeight) : "—");
+                        fNet.setText(d.HeaderNetWeight != null ? String(d.HeaderNetWeight) : "—");
+                        fDelDate.setText(fmtDate(d.DeliveryDate));
+                        if (d.EstimatedDistance) fDistance.setText(d.EstimatedDistance);
+                        if (d.EstimatedDuration) fDuration.setText(d.EstimatedDuration);
                     }).catch(function () {});
                 }
 
-                // ── Fetch route directions ──
-                function loadDirections(deliveryDoc) {
-                    // Get the latest route for this delivery from RouteDirections
+                // ── Load route directions ──
+                function loadDirections() {
                     fetch("/odata/v4/gmaps/RouteDirections?$orderby=createdAt desc&$top=1&$expand=steps($orderby=stepNumber asc)", {
                         headers: { "Authorization": "Basic YWxpY2U6YWxpY2U=" }
                     }).then(function (r) { return r.ok ? r.json() : null; })
                       .then(function (data) {
                         if (!data || !data.value || !data.value[0]) return;
                         var dir = data.value[0];
-
-                        addressFromText.setText(dir.origin || "—");
-                        addressToText.setText(dir.destination || "—");
-                        distanceText.setText(dir.distance || "—");
-                        durationText.setText(dir.duration || "—");
-
-                        // Populate directions list
+                        fFrom.setText(dir.origin || "—");
+                        fTo.setText(dir.destination || "—");
+                        if (dir.distance) fDistance.setText(dir.distance);
+                        if (dir.duration) fDuration.setText(dir.duration);
                         var steps = dir.steps || [];
                         directionsList.destroyItems();
                         steps.forEach(function (step) {
+                            var icon = "sap-icon://navigation-right-arrow";
+                            if (step.maneuver && step.maneuver.indexOf("left") >= 0) icon = "sap-icon://navigation-left-arrow";
+                            if (step.maneuver && step.maneuver.indexOf("straight") >= 0) icon = "sap-icon://arrow-top";
                             directionsList.addItem(new StandardListItem({
                                 title: step.instruction,
-                                description: step.distance + " — " + step.duration,
-                                icon: "sap-icon://navigation-right-arrow",
-                                info: "Step " + step.stepNumber,
+                                description: step.distance + "  •  " + step.duration,
+                                icon: icon,
+                                info: String(step.stepNumber),
                                 infoState: "None"
                             }));
                         });
                     }).catch(function () {});
                 }
 
-                // ── Bootstrap ──
+                // ── Init ──
                 function init() {
                     if (!_assignmentId) {
-                        objHeader.setTitle("Invalid Link");
-                        statusBadge.setText("ERROR");
-                        statusBadge.setState("Error");
+                        opHeader.setObjectTitle("Invalid Link");
+                        headerStatus.setText("ERROR"); headerStatus.setState("Error");
                         return;
                     }
 
-                    // Fetch assignment
                     fetch("/odata/v4/tracking/DriverAssignment('" + _assignmentId + "')", {
                         headers: { "Authorization": "Basic YWxpY2U6YWxpY2U=" }
                     }).then(function (r) {
                         if (!r.ok) throw new Error(r.status);
                         return r.json();
-                    }).then(function (assignment) {
-                        _assignment = assignment;
-
-                        if (assignment.Status === "DELIVERED") {
-                            objHeader.setTitle("Delivery " + assignment.DeliveryDocument);
-                            statusBadge.setText("DELIVERED");
-                            statusBadge.setState("Success");
-                            completionPanel.setVisible(true);
+                    }).then(function (a) {
+                        if (a.Status === "DELIVERED") {
+                            opHeader.setObjectTitle("Delivery " + a.DeliveryDocument);
+                            opHeader.setObjectSubtitle(a.TruckRegistration || a.MobileNumber);
+                            headerStatus.setText("DELIVERED"); headerStatus.setState("Success");
+                            completionStrip.setVisible(true);
+                            loadDeliveryDetails(a.DeliveryDocument);
+                            loadDirections();
                             return;
                         }
 
-                        // Populate header
-                        var label = assignment.TruckRegistration || assignment.MobileNumber;
-                        objHeader.setTitle("Delivery " + assignment.DeliveryDocument);
-                        objHeader.setNumber(label);
-                        objHeader.setNumberUnit("Truck / Driver");
+                        opHeader.setObjectTitle("Delivery " + a.DeliveryDocument);
+                        opHeader.setObjectSubtitle((a.TruckRegistration || "") + "  •  " + (a.MobileNumber || ""));
+                        headerStatus.setText(a.Status);
+                        headerStatus.setState(a.Status === "IN_TRANSIT" ? "Warning" : "Information");
 
-                        statusBadge.setText(assignment.Status);
-                        statusBadge.setState(assignment.Status === "IN_TRANSIT" ? "Warning" : "Information");
-
-                        // Populate details
-                        deliveryDocText.setText(assignment.DeliveryDocument);
-                        assignedAtText.setText(fmtDate(assignment.AssignedAt));
-                        distanceText.setText(assignment.EstimatedDistance || "—");
-                        durationText.setText(assignment.EstimatedDuration || "—");
+                        fDelivery.setText(a.DeliveryDocument);
+                        fTruck.setText(a.TruckRegistration || "—");
+                        fMobile.setText(a.MobileNumber || "—");
+                        fAssigned.setText(fmtDate(a.AssignedAt));
+                        if (a.EstimatedDistance) fDistance.setText(a.EstimatedDistance);
+                        if (a.EstimatedDuration) fDuration.setText(a.EstimatedDuration);
 
                         confirmBtn.setVisible(true);
 
-                        // Load extra details
-                        loadDeliveryDetails(assignment.DeliveryDocument);
-                        loadDirections(assignment.DeliveryDocument);
+                        loadDeliveryDetails(a.DeliveryDocument);
+                        loadDirections();
 
-                        // Start GPS
                         if (navigator.geolocation) {
-                            _watchId = navigator.geolocation.watchPosition(onPosition, onGpsError, {
-                                enableHighAccuracy: true
-                            });
-                        } else {
-                            onGpsError();
-                        }
+                            _watchId = navigator.geolocation.watchPosition(onPosition, onGpsError, { enableHighAccuracy: true });
+                        } else { onGpsError(); }
                         _intervalId = setInterval(sendLocation, 30000);
-
-                        // Wake lock
-                        if (navigator.wakeLock) {
-                            navigator.wakeLock.request("screen").catch(function () {});
-                        }
-                    }).catch(function (err) {
-                        objHeader.setTitle("Error");
-                        statusBadge.setText("NOT FOUND");
-                        statusBadge.setState("Error");
+                        if (navigator.wakeLock) navigator.wakeLock.request("screen").catch(function () {});
+                    }).catch(function () {
+                        opHeader.setObjectTitle("Assignment Not Found");
+                        headerStatus.setText("ERROR"); headerStatus.setState("Error");
                     });
                 }
 
