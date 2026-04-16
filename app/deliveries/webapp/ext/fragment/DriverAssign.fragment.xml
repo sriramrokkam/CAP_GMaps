@@ -22,11 +22,10 @@
         </VBox>
 
         <!-- QR code display (hidden until assignment succeeds or getQRCode returns) -->
-        <VBox id="qrSection" visible="false" class="sapUiSmallMargin">
+        <VBox id="qrSection" visible="false" class="sapUiSmallMargin" alignItems="Center">
             <Text id="qrLabel" text="Scan QR code to start tracking:"
                   class="sapUiTinyMarginBottom"/>
-            <!-- QR code rendered as HTML img with base64 data URL src -->
-            <core:HTML id="qrImageHtml" content="&lt;div id='qrImageContainer'&gt;&lt;/div&gt;"/>
+            <core:HTML id="qrImageHtml" content="&lt;span&gt;&lt;/span&gt;"/>
         </VBox>
 
         <beginButton>
