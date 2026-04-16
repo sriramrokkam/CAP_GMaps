@@ -93,6 +93,40 @@ module.exports = class EwmService extends cds.ApplicationService {
             }
         });
 
+        // ── ACTION: fetch delivery line items from EWM ────────────────────
+        this.on('getDeliveryItems', async (req) => {
+            const { deliveryDoc } = req.data;
+            if (!deliveryDoc) return req.error(400, 'deliveryDoc is required');
+
+            try {
+                const url = `/s4hanacloud/sap/opu/odata/sap/API_OUTBOUND_DELIVERY_SRV;v=0002/A_OutbDeliveryItem` +
+                    `?$filter=DeliveryDocument eq '${deliveryDoc}'` +
+                    `&$select=DeliveryDocumentItem,Material,ActualDeliveryQuantity,DeliveryQuantityUnit,Plant,StorageLocation,TransportationGroup`;
+
+                const res = await ewmApi.send({
+                    method: 'GET',
+                    path: url,
+                    headers: { 'APIKey': SANDBOX_KEY }
+                });
+
+                // OData V2 collection: { d: { results: [...] } }
+                const rows = (res?.d?.results || res?.value || []).map(d => ({
+                    DeliveryDocumentItem: d.DeliveryDocumentItem,
+                    Material:             d.Material,
+                    DeliveryQuantity:     parseFloat(d.ActualDeliveryQuantity) || 0,
+                    DeliveryQuantityUnit: d.DeliveryQuantityUnit,
+                    Plant:                d.Plant,
+                    StorageLocation:      d.StorageLocation,
+                    TransportationGroup:  d.TransportationGroup
+                }));
+
+                return rows;
+            } catch (error) {
+                console.error('getDeliveryItems error:', error.message);
+                return req.error(500, `Failed to get delivery items: ${error.message}`);
+            }
+        });
+
         return super.init();
     }
 };
