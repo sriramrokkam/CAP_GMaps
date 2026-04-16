@@ -1,16 +1,28 @@
 sap.ui.define([
     "sap/m/MessageToast",
-    "sap/m/MessageBox"
-], function (MessageToast, MessageBox) {
+    "sap/m/MessageBox",
+    "sap/ui/core/Fragment"
+], function (MessageToast, MessageBox, Fragment) {
     "use strict";
+
+    var _driverAssign = null;
+
+    function _getDriverAssign() {
+        if (_driverAssign) return Promise.resolve(_driverAssign);
+        return new Promise(function (resolve) {
+            sap.ui.require(["ewm/deliveries/ext/fragment/DriverAssign"], function (mod) {
+                _driverAssign = mod;
+                resolve(mod);
+            });
+        });
+    }
 
     return {
         onAssignDriver: function (oBindingContext) {
             if (!oBindingContext) { MessageToast.show("No delivery selected"); return; }
             var deliveryDoc = oBindingContext.getProperty("DeliveryDocument");
             if (!deliveryDoc) { MessageToast.show("No delivery document found"); return; }
-
-            sap.ui.require(["ewm/deliveries/ext/fragment/DriverAssign"], function (DriverAssign) {
+            _getDriverAssign().then(function (DriverAssign) {
                 DriverAssign.openDialog(deliveryDoc, null);
             });
         },
@@ -32,7 +44,7 @@ sap.ui.define([
                     MessageToast.show("No active assignment found for this delivery.");
                     return;
                 }
-                sap.ui.require(["ewm/deliveries/ext/fragment/DriverAssign"], function (DriverAssign) {
+                _getDriverAssign().then(function (DriverAssign) {
                     DriverAssign.openDialog(deliveryDoc, data.QRCodeImage);
                 });
             }).catch(function () {
@@ -45,7 +57,6 @@ sap.ui.define([
             var deliveryDoc = oBindingContext.getProperty("DeliveryDocument");
             if (!deliveryDoc) return;
 
-            // 1. Find the active assignment for this delivery
             fetch("/odata/v4/tracking/DriverAssignment?$filter=DeliveryDocument eq '" + deliveryDoc + "' and Status ne 'DELIVERED'&$top=1&$orderby=AssignedAt desc", {
                 headers: { "Authorization": "Basic " + btoa("alice:alice") }
             }).then(function (r) { return r.json(); }).then(function (data) {
@@ -56,15 +67,12 @@ sap.ui.define([
                 }
 
                 var label = assignment.TruckRegistration || assignment.MobileNumber;
-                // 2. Show confirmation dialog
                 MessageBox.confirm(
                     "Close trip for delivery " + deliveryDoc + " (" + label + ")?\n\nThis will mark the delivery as completed and stop GPS tracking.",
                     {
                         title: "Close Trip",
                         onClose: function (sAction) {
                             if (sAction !== MessageBox.Action.OK) return;
-
-                            // 3. Call confirmDelivery
                             fetch("/odata/v4/tracking/confirmDelivery", {
                                 method: "POST",
                                 headers: {

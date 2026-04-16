@@ -4,8 +4,7 @@
 
     <Dialog id="driverAssignDialog"
             title="Assign Driver"
-            contentWidth="380px"
-            core:require="{ handler: 'ewm/deliveries/ext/fragment/DriverAssign' }">
+            contentWidth="380px">
 
         <!-- Assignment form (shown initially) -->
         <VBox id="assignForm" class="sapUiSmallMargin">
@@ -32,11 +31,11 @@
             <Button id="btnAssign"
                     text="Assign"
                     type="Emphasized"
-                    press="handler.onAssign"/>
+                    press=".onAssign"/>
         </beginButton>
         <endButton>
             <Button text="Close"
-                    press="handler.onCloseDialog"/>
+                    press=".onCloseDialog"/>
         </endButton>
     </Dialog>
 </core:FragmentDefinition>
