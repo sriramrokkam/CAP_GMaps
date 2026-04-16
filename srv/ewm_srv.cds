@@ -4,29 +4,13 @@ using { gmaps_schema } from '../db/gmaps_schema';
 @requires: 'authenticated-user'
 service EwmService {
 
-    @readonly
-    @restrict: [{ grant: 'READ', to: 'gmaps_user' }]
-    entity OutboundDeliveries {
-        key DeliveryDocument        : String(10);
-            ActualDeliveryRoute     : String(6);
-            ShippingPoint           : String(4);
-            ShipToParty             : String(10);
-            SalesOrganization       : String(4);
-            ShippingCondition       : String(2);
-            HeaderGrossWeight       : Decimal(13,3);
-            HeaderNetWeight         : Decimal(13,3);
-    }
+    // Persisted delivery headers — backed by DB table, proxied from EWM on READ
+    @restrict: [{ grant: ['READ'], to: 'gmaps_user' }]
+    entity OutboundDeliveries as projection on gmaps_schema.OutboundDeliveries;
 
-    // Virtual entity — used only as action return type, not persisted
-    entity DeliveryItems {
-        key DeliveryDocumentItem : String(6);
-            Material             : String(40);
-            DeliveryQuantity     : Decimal(13,3);
-            DeliveryQuantityUnit : String(3);
-            Plant                : String(4);
-            StorageLocation      : String(4);
-            TransportationGroup  : String(4);
-    }
+    // Persisted delivery line items — backed by DB table, upserted from EWM on getDeliveryItems
+    @restrict: [{ grant: ['READ'], to: 'gmaps_user' }]
+    entity DeliveryItems as projection on gmaps_schema.DeliveryItems;
 
     // Expose RouteDirections so the action return type is valid within this service
     @readonly

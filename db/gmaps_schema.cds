@@ -2,6 +2,42 @@ namespace gmaps_schema;
 
 using { managed, cuid } from '@sap/cds/common';
 
+/**
+ * Persisted outbound delivery headers — upserted from EWM on every READ,
+ * enabling cron jobs, bots, and IoT/Kafka consumers to query local data.
+ */
+entity OutboundDeliveries : managed {
+    key DeliveryDocument                  : String(10)   @title: 'Delivery Document';
+        ActualDeliveryRoute               : String(6)    @title: 'Route';
+        ShippingPoint                     : String(4)    @title: 'Shipping Point';
+        ShipToParty                       : String(10)   @title: 'Ship-To Party';
+        SalesOrganization                 : String(4)    @title: 'Sales Organization';
+        ShippingCondition                 : String(2)    @title: 'Shipping Condition';
+        HeaderGrossWeight                 : Decimal(13,3)@title: 'Gross Weight';
+        HeaderNetWeight                   : Decimal(13,3)@title: 'Net Weight';
+        // Status fields
+        HdrGoodsMvtIncompletionStatus     : String(1)    @title: 'Goods Mvt Status';
+        HeaderBillgIncompletionStatus     : String(1)    @title: 'Billing Status';
+        // Delivery date — stored as ISO string (EWM returns OData V2 /Date(ms)/ format)
+        DeliveryDate                      : DateTime     @title: 'Delivery Date';
+}
+
+/**
+ * Persisted delivery line items — upserted from EWM on every getDeliveryItems call.
+ */
+entity DeliveryItems : managed {
+    key DeliveryDocument      : String(10)    @title: 'Delivery Document';
+    key DeliveryDocumentItem  : String(6)     @title: 'Item';
+        Material              : String(40)    @title: 'Material';
+        DeliveryQuantity      : Decimal(13,3) @title: 'Quantity';
+        DeliveryQuantityUnit  : String(3)     @title: 'Unit';
+        Plant                 : String(4)     @title: 'Plant';
+        StorageLocation       : String(4)     @title: 'Storage Location';
+        TransportationGroup   : String(4)     @title: 'Transport Group';
+        // Association to header
+        delivery              : Association to OutboundDeliveries on delivery.DeliveryDocument = DeliveryDocument;
+}
+
 // /**
 //  * Stored route information
 //  */

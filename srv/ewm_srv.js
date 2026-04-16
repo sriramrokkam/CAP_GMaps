@@ -1,6 +1,14 @@
 // srv/ewm_srv.js
 const cds = require('@sap/cds');
 
+// Parse OData V2 /Date(milliseconds)/ format to ISO string
+function _parseODataDate(val) {
+    if (!val) return null;
+    const m = String(val).match(/\/Date\((-?\d+)\)\//);
+    if (m) return new Date(parseInt(m[1], 10)).toISOString();
+    return null;
+}
+
 module.exports = class EwmService extends cds.ApplicationService {
 
     async init() {
@@ -9,7 +17,9 @@ module.exports = class EwmService extends cds.ApplicationService {
         const gmaps  = await cds.connect.to('GmapsService');
         const SANDBOX_KEY = process.env.SAP_SANDBOX_API_KEY || '';
 
-        // ── LIST: proxy to EWM OData ──────────────────────────────────────
+        const { OutboundDeliveries, DeliveryItems } = this.entities;
+
+        // ── LIST: proxy to EWM OData, upsert to local DB ─────────────────
         this.on('READ', 'OutboundDeliveries', async (req) => {
             const { query } = req;
 
@@ -20,22 +30,27 @@ module.exports = class EwmService extends cds.ApplicationService {
                 const pairs = _extractFilters(where);
                 pairs.forEach(({ field, value }) => {
                     const map = {
-                        DeliveryDocument:     'DeliveryDocument',
-                        ActualDeliveryRoute:  'ActualDeliveryRoute',
-                        SalesOrganization:    'SalesOrganization',
-                        ShipToParty:          'ShipToParty',
-                        ShippingPoint:        'ShippingPoint'
+                        DeliveryDocument:                 'DeliveryDocument',
+                        ActualDeliveryRoute:              'ActualDeliveryRoute',
+                        SalesOrganization:                'SalesOrganization',
+                        ShipToParty:                      'ShipToParty',
+                        ShippingPoint:                    'ShippingPoint',
+                        HdrGoodsMvtIncompletionStatus:    'HdrGoodsMvtIncompletionStatus',
+                        HeaderBillgIncompletionStatus:    'HeaderBillgIncompletionStatus'
                     };
                     if (map[field]) filters.push(`${map[field]} eq '${value}'`);
                 });
             }
 
-            const top   = query.SELECT?.limit?.rows?.val || 50;
-            const skip  = query.SELECT?.limit?.offset?.val || 0;
+            const top  = query.SELECT?.limit?.rows?.val || 50;
+            const skip = query.SELECT?.limit?.offset?.val || 0;
 
-            let url = `/s4hanacloud/sap/opu/odata/sap/API_OUTBOUND_DELIVERY_SRV;v=0002/A_OutbDeliveryHeader?$top=${top}&$skip=${skip}`;
+            let url = `/s4hanacloud/sap/opu/odata/sap/API_OUTBOUND_DELIVERY_SRV;v=0002/A_OutbDeliveryHeader` +
+                `?$top=${top}&$skip=${skip}`;
             if (filters.length) url += `&$filter=${filters.join(' and ')}`;
-            url += `&$select=DeliveryDocument,ActualDeliveryRoute,ShippingPoint,ShipToParty,SalesOrganization,ShippingCondition,HeaderGrossWeight,HeaderNetWeight`;
+            url += `&$select=DeliveryDocument,ActualDeliveryRoute,ShippingPoint,ShipToParty,` +
+                   `SalesOrganization,ShippingCondition,HeaderGrossWeight,HeaderNetWeight,` +
+                   `HdrGoodsMvtIncompletionStatus,HeaderBillgIncompletionStatus,DeliveryDate`;
 
             const res = await ewmApi.send({
                 method: 'GET',
@@ -43,17 +58,27 @@ module.exports = class EwmService extends cds.ApplicationService {
                 headers: { 'APIKey': SANDBOX_KEY }
             });
 
-            // API_OUTBOUND_DELIVERY_SRV is OData V2 — response is { d: { results: [...] } }
-            const rows = (res?.d?.results || res.value || []).map(d => ({
-                DeliveryDocument:        d.DeliveryDocument,
-                ActualDeliveryRoute:     d.ActualDeliveryRoute,
-                ShippingPoint:           d.ShippingPoint,
-                ShipToParty:             d.ShipToParty,
-                SalesOrganization:       d.SalesOrganization,
-                ShippingCondition:       d.ShippingCondition,
-                HeaderGrossWeight:       parseFloat(d.HeaderGrossWeight) || 0,
-                HeaderNetWeight:         parseFloat(d.HeaderNetWeight) || 0,
+            // OData V2 collection: { d: { results: [...] } }
+            const rows = (res?.d?.results || res?.value || []).map(d => ({
+                DeliveryDocument:              d.DeliveryDocument,
+                ActualDeliveryRoute:           d.ActualDeliveryRoute,
+                ShippingPoint:                 d.ShippingPoint,
+                ShipToParty:                   d.ShipToParty,
+                SalesOrganization:             d.SalesOrganization,
+                ShippingCondition:             d.ShippingCondition,
+                HeaderGrossWeight:             parseFloat(d.HeaderGrossWeight) || 0,
+                HeaderNetWeight:               parseFloat(d.HeaderNetWeight) || 0,
+                HdrGoodsMvtIncompletionStatus: d.HdrGoodsMvtIncompletionStatus || null,
+                HeaderBillgIncompletionStatus: d.HeaderBillgIncompletionStatus || null,
+                DeliveryDate:                  _parseODataDate(d.DeliveryDate)
             }));
+
+            // Upsert into local DB (fire-and-forget — don't block the response)
+            if (rows.length > 0) {
+                cds.run(UPSERT.into(OutboundDeliveries).entries(rows)).catch(err => {
+                    console.error('OutboundDeliveries upsert error:', err.message);
+                });
+            }
 
             return rows;
         });
@@ -70,7 +95,6 @@ module.exports = class EwmService extends cds.ApplicationService {
                     method: 'GET', path: headerUrl,
                     headers: { 'APIKey': SANDBOX_KEY }
                 });
-                // OData V2 single-record response: { d: { field: value, ... } }
                 const header = headerRaw?.d || headerRaw;
                 if (!header || !header.ShippingPoint || !header.ShipToParty) {
                     return req.error(404, `Delivery ${deliveryDoc} not found or missing ShippingPoint/ShipToParty`);
@@ -84,7 +108,7 @@ module.exports = class EwmService extends cds.ApplicationService {
                 const toAddress = await _resolveAddress(bpApi, header.ShipToParty, SANDBOX_KEY);
                 if (!toAddress) return req.error(404, `Could not resolve address for ShipToParty ${header.ShipToParty}`);
 
-                // 4. Delegate to GmapsService.getDirections
+                // 4. Delegate to GmapsService.getDirections (persists route automatically)
                 const result = await gmaps.send('getDirections', { from: fromAddress, to: toAddress });
                 return result;
             } catch (error) {
@@ -93,7 +117,7 @@ module.exports = class EwmService extends cds.ApplicationService {
             }
         });
 
-        // ── ACTION: fetch delivery line items from EWM ────────────────────
+        // ── ACTION: fetch delivery line items from EWM, upsert to DB ─────
         this.on('getDeliveryItems', async (req) => {
             const { deliveryDoc } = req.data;
             if (!deliveryDoc) return req.error(400, 'deliveryDoc is required');
@@ -101,7 +125,8 @@ module.exports = class EwmService extends cds.ApplicationService {
             try {
                 const url = `/s4hanacloud/sap/opu/odata/sap/API_OUTBOUND_DELIVERY_SRV;v=0002/A_OutbDeliveryItem` +
                     `?$filter=DeliveryDocument eq '${deliveryDoc}'` +
-                    `&$select=DeliveryDocumentItem,Material,ActualDeliveryQuantity,DeliveryQuantityUnit,Plant,StorageLocation,TransportationGroup`;
+                    `&$select=DeliveryDocument,DeliveryDocumentItem,Material,ActualDeliveryQuantity,` +
+                    `DeliveryQuantityUnit,Plant,StorageLocation,TransportationGroup`;
 
                 const res = await ewmApi.send({
                     method: 'GET',
@@ -111,6 +136,7 @@ module.exports = class EwmService extends cds.ApplicationService {
 
                 // OData V2 collection: { d: { results: [...] } }
                 const rows = (res?.d?.results || res?.value || []).map(d => ({
+                    DeliveryDocument:     d.DeliveryDocument,
                     DeliveryDocumentItem: d.DeliveryDocumentItem,
                     Material:             d.Material,
                     DeliveryQuantity:     parseFloat(d.ActualDeliveryQuantity) || 0,
@@ -119,6 +145,13 @@ module.exports = class EwmService extends cds.ApplicationService {
                     StorageLocation:      d.StorageLocation,
                     TransportationGroup:  d.TransportationGroup
                 }));
+
+                // Upsert into local DB (fire-and-forget)
+                if (rows.length > 0) {
+                    cds.run(UPSERT.into(DeliveryItems).entries(rows)).catch(err => {
+                        console.error('DeliveryItems upsert error:', err.message);
+                    });
+                }
 
                 return rows;
             } catch (error) {
@@ -140,7 +173,6 @@ async function _resolveAddress(bpApi, businessPartner, sandboxKey) {
             method: 'GET', path: url,
             headers: { 'APIKey': sandboxKey }
         });
-        // OData V2 collection response: { d: { results: [...] } }
         const addr = (res?.d?.results || res?.value || [])[0];
         if (!addr) return null;
         return [addr.StreetName, addr.CityName, addr.PostalCode, addr.Country]
