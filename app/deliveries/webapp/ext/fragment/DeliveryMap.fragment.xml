@@ -1,0 +1,65 @@
+<core:FragmentDefinition
+    xmlns:core="sap.ui.core"
+    xmlns="sap.m"
+    xmlns:l="sap.ui.layout">
+
+    <VBox id="deliveryMapContainer"
+          core:require="{ handler: 'ewm/deliveries/ext/fragment/DeliveryMap' }">
+
+        <!-- Action buttons -->
+        <HBox id="mapActionBar" class="sapUiSmallMarginBottom" alignItems="Center">
+            <Button id="btnViewMap"
+                    text="View on Map"
+                    icon="sap-icon://map"
+                    type="Emphasized"
+                    press="handler.onViewMap"
+                    class="sapUiTinyMarginEnd"/>
+            <Button id="btnGetDirections"
+                    text="Get Directions"
+                    icon="sap-icon://navigation-right-arrow"
+                    type="Default"
+                    press="handler.onGetDirections"/>
+        </HBox>
+
+        <!-- Loading indicator -->
+        <BusyIndicator id="mapBusyIndicator" visible="false" size="Medium" class="sapUiSmallMarginBottom"/>
+
+        <!-- Error message -->
+        <MessageStrip id="mapErrorStrip" visible="false" type="Error"
+                      showCloseButton="true" class="sapUiSmallMarginBottom"/>
+
+        <!-- IconTabBar: Map | Directions -->
+        <IconTabBar id="deliveryTabBar" visible="false" expanded="true"
+                    backgroundDesign="Transparent" tabDensityMode="Compact">
+
+            <items>
+                <IconTabFilter id="tabMap" icon="sap-icon://map" text="Map" key="map">
+                    <VBox id="mapTabContent">
+                        <!-- Stats bar: distance + duration -->
+                        <HBox id="routeStatsBar" visible="false" class="sapUiTinyMarginBottom">
+                            <ObjectStatus id="routeDistance" icon="sap-icon://journey-arrive" class="sapUiSmallMarginEnd"/>
+                            <ObjectStatus id="routeDuration" icon="sap-icon://time-entry-request"/>
+                        </HBox>
+                        <!-- Google Map HTML container -->
+                        <core:HTML id="googleMapHtml"
+                            content='&lt;div id="deliveryGoogleMap" style="width:100%;height:450px;min-height:450px;border:1px solid #d9d9d9;background:#e5e3df;position:relative;"&gt;&lt;div id="deliveryMapPlaceholder" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;color:#888;"&gt;&lt;p&gt;Click &amp;quot;View on Map&amp;quot; to load the route map.&lt;/p&gt;&lt;/div&gt;&lt;/div&gt;'/>
+                    </VBox>
+                </IconTabFilter>
+
+                <IconTabFilter id="tabDirections" icon="sap-icon://navigation-right-arrow" text="Directions" key="directions">
+                    <VBox id="directionsTabContent">
+                        <Title id="directionsTitle" text="Step-by-Step Directions"
+                               level="H5" visible="false" class="sapUiTinyMarginBottom"/>
+                        <List id="directionsList" visible="false"
+                              showSeparators="Inner" backgroundDesign="Transparent"/>
+                        <Text id="directionsPlaceholder"
+                              text="Click 'Get Directions' to load turn-by-turn directions."
+                              class="sapUiSmallMarginTop"
+                              style="color:#888;font-style:italic;"/>
+                    </VBox>
+                </IconTabFilter>
+            </items>
+        </IconTabBar>
+
+    </VBox>
+</core:FragmentDefinition>
