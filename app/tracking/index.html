@@ -281,7 +281,7 @@
         }
 
         // 2. Fetch assignment
-        fetch('/odata/v4/tracking/DriverAssignment(' + encodeURIComponent(_assignmentId) + ')', {
+        fetch('/odata/v4/tracking/DriverAssignment(' + encodeURIComponent("'" + _assignmentId + "'") + ')', {
           headers: {
             'Authorization': 'Basic YWxpY2U6YWxpY2U='
           }
@@ -299,7 +299,7 @@
           .then(function (data) {
             if (!data) return; // 404 handled above
 
-            var assignment = data.value !== undefined ? data.value : data;
+            var assignment = data;
 
             // Check if already delivered
             if (!assignment || assignment.Status === 'DELIVERED') {
