@@ -22,7 +22,7 @@
         </HBox>
 
         <!-- Loading indicator -->
-        <BusyIndicator id="mapBusyIndicator" visible="false" size="Medium" class="sapUiSmallMarginBottom"/>
+        <BusyIndicator id="mapBusyIndicator" visible="false" class="sapUiSmallMarginBottom"/>
 
         <!-- Error message -->
         <MessageStrip id="mapErrorStrip" visible="false" type="Error"

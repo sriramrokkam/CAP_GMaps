@@ -15,7 +15,6 @@ service EwmService {
             ShippingCondition       : String(2);
             HeaderGrossWeight       : Decimal(13,3);
             HeaderNetWeight         : Decimal(13,3);
-            ShippingLocationTimezone: String(10);
     }
 
     // Expose RouteDirections so the action return type is valid within this service

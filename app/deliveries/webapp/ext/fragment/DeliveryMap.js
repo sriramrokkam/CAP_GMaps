@@ -64,12 +64,11 @@ sap.ui.define([
             oBinding.setParameter("deliveryDoc", deliveryDoc);
 
             oBinding.execute().then(() => {
-                return oBinding.getBoundContext().requestObject();
+                const oBoundCtx = oBinding.getBoundContext();
+                if (!oBoundCtx) { throw new Error("No route data returned."); }
+                return oBoundCtx.requestObject();
             }).then(oResult => {
-                if (!oResult) {
-                    handler._showError("No route data returned.");
-                    return;
-                }
+                if (!oResult) { throw new Error("No route data returned."); }
 
                 // Show the tab bar and switch to selected tab
                 handler._showTabBar(targetTab);
@@ -77,7 +76,15 @@ sap.ui.define([
                 if (targetTab === "map") {
                     handler._renderMap(oResult);
                 } else {
-                    handler._renderDirections(oResult.steps || []);
+                    // steps are a nav property on RouteDirections — fetch via GmapsService
+                    const routeId = oResult.route_ID;
+                    fetch(`/odata/v4/gmaps/RouteDirections(route_ID=${routeId})?$expand=steps($orderby=stepNumber asc)`, {
+                        headers: { "Authorization": "Basic " + btoa("alice:alice") }
+                    }).then(r => r.json()).then(data => {
+                        handler._renderDirections((data && data.steps) || []);
+                    }).catch(() => {
+                        handler._renderDirections([]);
+                    });
                 }
             }).catch(err => {
                 const msg = err.message || "Failed to load route";
@@ -229,11 +236,12 @@ sap.ui.define([
         },
 
         _find: function (sLocalId) {
-            const elements = sap.ui.getCore().mElements || {};
-            const match = Object.keys(elements).find(k =>
-                k.endsWith("--" + sLocalId) || k === sLocalId
-            );
-            return match ? sap.ui.getCore().byId(match) : null;
+            // Find the full generated ID via DOM, then resolve the UI5 control
+            const el = document.querySelector(`[id$="--${sLocalId}"]`);
+            if (!el) return null;
+            // Strip the sap-ui-invisible- placeholder prefix if present
+            const fullId = el.id.replace(/^sap-ui-invisible-/, "");
+            return sap.ui.getCore().byId(fullId) || null;
         },
 
         // ── Google Maps script loader ────────────────────────────────────

@@ -48,8 +48,7 @@ annotate service.OutboundDeliveries with @(
             { $Type: 'UI.DataField', Value: SalesOrganization,       Label: 'Sales Organization' },
             { $Type: 'UI.DataField', Value: ShippingCondition,       Label: 'Shipping Condition' },
             { $Type: 'UI.DataField', Value: HeaderGrossWeight,       Label: 'Gross Weight' },
-            { $Type: 'UI.DataField', Value: HeaderNetWeight,         Label: 'Net Weight' },
-            { $Type: 'UI.DataField', Value: ShippingLocationTimezone,Label: 'Timezone' }
+            { $Type: 'UI.DataField', Value: HeaderNetWeight,         Label: 'Net Weight' }
         ]
     }
 );
