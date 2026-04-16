@@ -56,6 +56,18 @@
           "url": "https://maps.googleapis.com"
         }
       },
+      "EWM-API": {
+        "kind": "rest",
+        "credentials": {
+          "url": "https://sandbox.api.sap.com"
+        }
+      },
+      "BP-API": {
+        "kind": "rest",
+        "credentials": {
+          "url": "https://sandbox.api.sap.com"
+        }
+      },
       "[production]": {
         "db": {
           "kind": "hana"
@@ -64,6 +76,18 @@
           "kind": "rest",
           "credentials": {
             "destination": "GoogleAPI-SR"
+          }
+        },
+        "EWM-API": {
+          "kind": "rest",
+          "credentials": {
+            "destination": "EWM-API"
+          }
+        },
+        "BP-API": {
+          "kind": "rest",
+          "credentials": {
+            "destination": "BP-API"
           }
         },
         "auth": {
