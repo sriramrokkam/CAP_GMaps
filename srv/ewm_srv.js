@@ -136,6 +136,26 @@ module.exports = class EwmService extends cds.ApplicationService {
 
                 // 4. Delegate to GmapsService.getDirections (persists route automatically)
                 const result = await gmaps.send('getDirections', { from: fromAddress, to: toAddress });
+
+                // 5. Write distance/duration back to OutboundDeliveries row (fire-and-forget)
+                if (result && result.distance) {
+                    cds.run(
+                        UPDATE(OutboundDeliveries)
+                            .set({ EstimatedDistance: result.distance, EstimatedDuration: result.duration || null })
+                            .where({ DeliveryDocument: deliveryDoc })
+                    ).catch(err => console.error('Route distance update error:', err.message));
+
+                    // Also update any active DriverAssignment for this delivery
+                    const { DriverAssignment } = cds.entities('iot_schema');
+                    if (DriverAssignment) {
+                        cds.run(
+                            UPDATE(DriverAssignment)
+                                .set({ EstimatedDistance: result.distance, EstimatedDuration: result.duration || null })
+                                .where({ DeliveryDocument: deliveryDoc, Status: { '!=': 'DELIVERED' } })
+                        ).catch(err => console.error('DriverAssignment distance update error:', err.message));
+                    }
+                }
+
                 return result;
             } catch (error) {
                 console.error('getDeliveryRoute error:', error.message);
