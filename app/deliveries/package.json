@@ -1,0 +1,15 @@
+{
+  "name": "deliveries",
+  "version": "0.0.1",
+  "description": "EWM Outbound Deliveries with Google Maps",
+  "keywords": ["ui5", "sapui5"],
+  "main": "webapp/index.html",
+  "dependencies": {},
+  "devDependencies": {
+    "@ui5/cli": "^4.0.33",
+    "@sap/ux-ui5-tooling": "1"
+  },
+  "scripts": {
+    "build": "ui5 build preload --clean-dest"
+  }
+}
