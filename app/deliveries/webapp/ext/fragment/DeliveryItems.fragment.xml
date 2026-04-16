@@ -6,12 +6,22 @@
     <VBox id="deliveryItemsContainer"
           core:require="{ handler: 'ewm/deliveries/ext/fragment/DeliveryItems' }">
 
+        <!-- Load button -->
+        <HBox id="itemsActionBar" class="sapUiSmallMarginBottom" alignItems="Center">
+            <Button id="btnLoadItems"
+                    text="Load Items"
+                    icon="sap-icon://product"
+                    type="Emphasized"
+                    press="handler.onLoadItems"/>
+        </HBox>
+
         <!-- Error message -->
         <MessageStrip id="itemsErrorStrip" visible="false" type="Error"
                       showCloseButton="true" class="sapUiSmallMarginBottom"/>
 
         <!-- Items table -->
         <Table id="deliveryItemsTable"
+               visible="false"
                noDataText="No items found for this delivery."
                class="sapUiSmallMarginTop">
             <columns>
