@@ -1,5 +1,12 @@
 using EwmService as service from '../../srv/ewm_srv';
 
+// Filter bar labels — Fiori Elements reads @Common.Label for SelectionFields
+annotate service.OutboundDeliveries with {
+    HdrGoodsMvtIncompletionStatus  @Common.Label: 'Goods Mvt Status';
+    HeaderBillgIncompletionStatus  @Common.Label: 'Billing Status';
+    DeliveryDate                   @Common.Label: 'Delivery Date';
+};
+
 annotate service.OutboundDeliveries with @(
     UI.HeaderInfo: {
         TypeName:       'Outbound Delivery',
