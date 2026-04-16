@@ -360,7 +360,7 @@ sap.ui.define([
         },
 
         _updateTruckMarker: function (assignmentId, label, map) {
-            fetch(`/odata/v4/tracking/latestGps(assignmentId=${encodeURIComponent("'" + assignmentId + "'")})`, {
+            fetch(`/odata/v4/tracking/latestGps(assignmentId=${assignmentId})`, {
                 headers: { "Authorization": "Basic " + btoa("alice:alice") }
             }).then(r => r.json()).then(gps => {
                 if (!gps || !gps.Latitude) return;
