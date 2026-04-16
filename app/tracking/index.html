@@ -158,6 +158,11 @@
     <!-- Confirm Delivery button -->
     <button id="confirmBtn">Confirm Delivery</button>
 
+    <!-- Simulate GPS button (for local testing on desktop) -->
+    <button id="simGpsBtn" style="display:none;background:#1a6bc4;color:#fff;border:2px dashed #7ab8ff;border-radius:12px;padding:16px 32px;font-size:16px;font-weight:600;cursor:pointer;margin-top:12px;width:100%;max-width:480px;">
+      📍 Simulate GPS (testing)
+    </button>
+
     <!-- Error / completion screen -->
     <div id="messageScreen">
       <div id="messageIcon">ℹ️</div>
@@ -183,6 +188,7 @@
       var truckLabel    = document.getElementById('truckLabel');
       var gpsWarning    = document.getElementById('gpsWarning');
       var confirmBtn    = document.getElementById('confirmBtn');
+      var simGpsBtn     = document.getElementById('simGpsBtn');
       var messageScreen = document.getElementById('messageScreen');
       var messageIcon   = document.getElementById('messageIcon');
       var messageText   = document.getElementById('messageText');
@@ -212,7 +218,19 @@
 
       function onGpsError() {
         gpsWarning.style.display = 'block';
+        simGpsBtn.style.display  = 'block';
       }
+
+      // ── Simulate GPS (for desktop/local testing) ──────────────────────
+      simGpsBtn.addEventListener('click', function () {
+        // Simulate a position near Bangalore, India with slight random offset
+        var baseLat = 12.9716 + (Math.random() - 0.5) * 0.01;
+        var baseLng = 77.5946 + (Math.random() - 0.5) * 0.01;
+        _latestPosition = { latitude: baseLat, longitude: baseLng, speed: 40, accuracy: 10 };
+        gpsWarning.style.display = 'none';
+        simGpsBtn.textContent    = '📍 GPS simulated (' + baseLat.toFixed(4) + ', ' + baseLng.toFixed(4) + ')';
+        sendLocation();
+      });
 
       // ── Periodic location update (every 30 s) ────────────────────────────
       function sendLocation() {
