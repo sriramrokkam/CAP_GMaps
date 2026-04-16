@@ -1,5 +1,5 @@
 // srv/ewm_srv.cds
-using { GmapsService } from './gmap_srv';
+using { gmaps_schema } from '../db/gmaps_schema';
 
 @requires: 'authenticated-user'
 service EwmService {
@@ -18,6 +18,10 @@ service EwmService {
             ShippingLocationTimezone: String(10);
     }
 
+    // Expose RouteDirections so the action return type is valid within this service
+    @readonly
+    entity RouteDirections as projection on gmaps_schema.RouteDirections;
+
     @restrict: [{ grant: 'EXECUTE', to: 'gmaps_user' }]
-    action getDeliveryRoute(deliveryDoc: String) returns GmapsService.RouteDirections;
+    action getDeliveryRoute(deliveryDoc: String) returns RouteDirections;
 }
