@@ -1,0 +1,43 @@
+<core:FragmentDefinition
+    xmlns:core="sap.ui.core"
+    xmlns="sap.m">
+
+    <Dialog id="driverAssignDialog"
+            title="Assign Driver"
+            contentWidth="380px"
+            core:require="{ handler: 'ewm/deliveries/ext/fragment/DriverAssign' }">
+
+        <!-- Assignment form (shown initially) -->
+        <VBox id="assignForm" class="sapUiSmallMargin">
+            <Label text="Truck Registration" class="sapUiTinyMarginBottom"/>
+            <Input id="inputTruckReg"
+                   placeholder="e.g. TR001 (optional)"
+                   class="sapUiSmallMarginBottom"/>
+            <Label text="Mobile Number" required="true" class="sapUiTinyMarginBottom"/>
+            <Input id="inputMobile"
+                   placeholder="+49 123 456789 (mandatory)"
+                   class="sapUiSmallMarginBottom"/>
+            <MessageStrip id="assignErrorStrip" visible="false" type="Error"
+                          showCloseButton="false" class="sapUiTinyMarginBottom"/>
+        </VBox>
+
+        <!-- QR code display (hidden until assignment succeeds or getQRCode returns) -->
+        <VBox id="qrSection" visible="false" class="sapUiSmallMargin">
+            <Text id="qrLabel" text="Scan QR code to start tracking:"
+                  class="sapUiTinyMarginBottom"/>
+            <!-- QR code rendered as HTML img with base64 data URL src -->
+            <core:HTML id="qrImageHtml" content="&lt;div id='qrImageContainer'&gt;&lt;/div&gt;"/>
+        </VBox>
+
+        <beginButton>
+            <Button id="btnAssign"
+                    text="Assign"
+                    type="Emphasized"
+                    press="handler.onAssign"/>
+        </beginButton>
+        <endButton>
+            <Button text="Close"
+                    press="handler.onCloseDialog"/>
+        </endButton>
+    </Dialog>
+</core:FragmentDefinition>

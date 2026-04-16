@@ -12,6 +12,11 @@ sap.ui.define([
     let _mapsLoading  = false;
     const _mapsQueue  = [];
 
+    // Truck tracking state
+    let _truckMarker        = null;
+    let _trackingInterval   = null;
+    let _currentDeliveryDoc = null;
+
     const MANEUVER_ICONS = {
         "turn-right":        "sap-icon://navigation-right-arrow",
         "turn-left":         "sap-icon://navigation-left-arrow",
@@ -52,6 +57,7 @@ sap.ui.define([
 
             const deliveryDoc = oCtx.getObject().DeliveryDocument;
             if (!deliveryDoc) { MessageToast.show("No delivery document found"); return; }
+            _currentDeliveryDoc = deliveryDoc;
 
             // Disable buttons, show busy
             handler._setButtonsEnabled(false);
@@ -219,6 +225,13 @@ sap.ui.define([
                     geodesic: true, strokeColor: "#0854A0", strokeWeight: 4
                 }).setMap(map);
             }
+
+            // Start live truck marker polling if a driver is assigned
+            if (_currentDeliveryDoc) {
+                if (_trackingInterval) { clearInterval(_trackingInterval); _trackingInterval = null; }
+                _truckMarker = null;
+                handler._startTruckTracking(_currentDeliveryDoc, map);
+            }
         },
 
         // ── Directions rendering ─────────────────────────────────────────
@@ -289,6 +302,88 @@ sap.ui.define([
             // Strip the sap-ui-invisible- placeholder prefix if present
             const fullId = el.id.replace(/^sap-ui-invisible-/, "");
             return sap.ui.getCore().byId(fullId) || null;
+        },
+
+        // ── Driver assignment & truck tracking ───────────────────────────
+
+        onAssignDriver: function (oEvent) {
+            const oSource = oEvent.getSource();
+            const oCtx    = oSource.getBindingContext();
+            if (!oCtx) { MessageToast.show("No delivery selected"); return; }
+            const deliveryDoc = oCtx.getObject().DeliveryDocument;
+            if (!deliveryDoc) { MessageToast.show("No delivery document found"); return; }
+
+            sap.ui.require(["ewm/deliveries/ext/fragment/DriverAssign"], function (DriverAssign) {
+                DriverAssign.openDialog(deliveryDoc, null);
+            });
+        },
+
+        onShowQR: function (oEvent) {
+            const oSource = oEvent.getSource();
+            const oCtx    = oSource.getBindingContext();
+            if (!oCtx) { MessageToast.show("No delivery selected"); return; }
+            const deliveryDoc = oCtx.getObject().DeliveryDocument;
+            if (!deliveryDoc) return;
+
+            fetch(`/odata/v4/tracking/getQRCode`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": "Basic " + btoa("alice:alice")
+                },
+                body: JSON.stringify({ deliveryDoc })
+            }).then(r => r.json()).then(data => {
+                if (!data || !data.QRCodeImage) {
+                    MessageToast.show("No active assignment found for this delivery.");
+                    return;
+                }
+                sap.ui.require(["ewm/deliveries/ext/fragment/DriverAssign"], function (DriverAssign) {
+                    DriverAssign.openDialog(deliveryDoc, data.QRCodeImage);
+                });
+            }).catch(() => {
+                MessageToast.show("Failed to retrieve QR code.");
+            });
+        },
+
+        _startTruckTracking: function (deliveryDoc, map) {
+            fetch(`/odata/v4/tracking/DriverAssignment?$filter=DeliveryDocument eq '${deliveryDoc}' and Status ne 'DELIVERED'&$top=1&$orderby=AssignedAt desc`, {
+                headers: { "Authorization": "Basic " + btoa("alice:alice") }
+            }).then(r => r.json()).then(data => {
+                const a = data && data.value && data.value[0];
+                if (!a) return;
+                const label = a.TruckRegistration || a.MobileNumber;
+                handler._updateTruckMarker(a.ID, label, map);
+                _trackingInterval = setInterval(function () {
+                    handler._updateTruckMarker(a.ID, label, map);
+                }, 30000);
+            }).catch(() => { /* no active assignment, silent */ });
+        },
+
+        _updateTruckMarker: function (assignmentId, label, map) {
+            fetch(`/odata/v4/tracking/latestGps(assignmentId=${encodeURIComponent("'" + assignmentId + "'")})`, {
+                headers: { "Authorization": "Basic " + btoa("alice:alice") }
+            }).then(r => r.json()).then(gps => {
+                if (!gps || !gps.Latitude) return;
+                const pos = { lat: gps.Latitude, lng: gps.Longitude };
+                if (_truckMarker) {
+                    _truckMarker.setPosition(pos);
+                } else {
+                    _truckMarker = new google.maps.Marker({
+                        position: pos,
+                        map,
+                        label: { text: label, color: "white", fontWeight: "bold" },
+                        icon: {
+                            path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+                            scale: 5,
+                            fillColor: "#E8581C",
+                            fillOpacity: 1,
+                            strokeColor: "white",
+                            strokeWeight: 1
+                        },
+                        title: "Truck: " + label
+                    });
+                }
+            }).catch(() => { /* GPS not yet available */ });
         },
 
         // ── Google Maps script loader ────────────────────────────────────

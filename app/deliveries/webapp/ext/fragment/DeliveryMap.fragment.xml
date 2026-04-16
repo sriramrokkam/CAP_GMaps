@@ -19,6 +19,18 @@
                     icon="sap-icon://navigation-right-arrow"
                     type="Default"
                     press="handler.onGetDirections"/>
+            <Button id="btnAssignDriver"
+                    text="Assign Driver"
+                    icon="sap-icon://person-placeholder"
+                    type="Default"
+                    press="handler.onAssignDriver"
+                    class="sapUiTinyMarginBegin"/>
+            <Button id="btnShowQR"
+                    text="Show QR"
+                    icon="sap-icon://qr-code"
+                    type="Default"
+                    press="handler.onShowQR"
+                    class="sapUiTinyMarginBegin"/>
         </HBox>
 
         <!-- Loading indicator -->
