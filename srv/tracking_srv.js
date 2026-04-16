@@ -194,8 +194,34 @@ module.exports = class TrackingService extends cds.ApplicationService {
                 // 5. Delete Kafka topic (fire-and-forget — don't block response)
                 kafkaProducer.deleteTopic(assignment.KafkaTopic).catch(err => console.error('Kafka deleteTopic (non-fatal):', err.message));
 
-                // 6. Notify Teams (fire-and-forget)
-                teamsNotify.post('DELIVERED', { ...assignment, DeliveredAt: deliveredAt }).catch(err => console.error('Teams notify (non-fatal):', err.message));
+                // 6. Notify Teams with last GPS + customer details (fire-and-forget)
+                (async () => {
+                    try {
+                        // Fetch last GPS position
+                        const lastGps = await SELECT.one.from(GpsCoordinates)
+                            .where({ assignment_ID: assignmentId })
+                            .orderBy({ RecordedAt: 'desc' });
+
+                        // Fetch ShipToParty from delivery
+                        let shipToParty = null;
+                        try {
+                            const del = await db.run(
+                                SELECT.one.from('gmaps_schema_OutboundDeliveries')
+                                    .columns('ShipToParty')
+                                    .where({ DeliveryDocument: assignment.DeliveryDocument })
+                            );
+                            if (del) shipToParty = del.ShipToParty;
+                        } catch (_) {}
+
+                        await teamsNotify.post('DELIVERED', {
+                            ...assignment,
+                            DeliveredAt: deliveredAt,
+                            ShipToParty: shipToParty,
+                            LastLat: lastGps ? lastGps.Latitude : null,
+                            LastLng: lastGps ? lastGps.Longitude : null
+                        });
+                    } catch (e) { console.error('Teams DELIVERED notify error:', e.message); }
+                })();
 
                 return true;
             } catch (err) {

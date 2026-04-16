@@ -377,14 +377,20 @@ sap.ui.define([
                         label: { text: label, color: "white", fontWeight: "bold" },
                         icon: {
                             path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-                            scale: 5,
+                            scale: 6,
                             fillColor: "#E8581C",
                             fillOpacity: 1,
                             strokeColor: "white",
-                            strokeWeight: 1
+                            strokeWeight: 2
                         },
                         title: "Truck: " + label
                     });
+                    // Extend map bounds to show truck marker
+                    var bounds = map.getBounds();
+                    if (bounds) {
+                        bounds.extend(pos);
+                        map.fitBounds(bounds);
+                    }
                 }
             }).catch(() => { /* GPS not yet available */ });
         },
