@@ -12,7 +12,11 @@ entity DriverAssignment : managed {
         TruckRegistration : String(20)    @title: 'Truck Registration'; // nullable
         AssignedAt        : DateTime      @title: 'Assigned At';
         DeliveredAt       : DateTime      @title: 'Delivered At';       // set on confirmation
-        Status            : String(20)    @title: 'Status';             // ASSIGNED | IN_TRANSIT | DELIVERED
+        Status            : String(20) @title: 'Status' enum {
+                              ASSIGNED;
+                              IN_TRANSIT;
+                              DELIVERED;
+                          } = 'ASSIGNED';
         KafkaTopic        : String(100)   @title: 'Kafka Topic';        // 'gps-{DeliveryDocument}'
         QRCodeUrl         : String(500)   @title: 'QR Code URL';        // '/tracking/index.html#<ID>'
         QRCodeImage       : LargeString   @title: 'QR Code Image';      // base64 PNG data URL
@@ -25,6 +29,8 @@ entity DriverAssignment : managed {
 entity GpsCoordinates : managed {
     key ID            : UUID;
         assignment_ID : UUID          @title: 'Assignment ID';   // FK to DriverAssignment
+        // Convenience association for server-side queries; mobile callers use assignment_ID directly
+        assignment    : Association to DriverAssignment on assignment.ID = assignment_ID;
         Latitude      : Double        @title: 'Latitude';
         Longitude     : Double        @title: 'Longitude';
         Speed         : Double        @title: 'Speed (m/s)';     // nullable
