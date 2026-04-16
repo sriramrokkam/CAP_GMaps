@@ -60,11 +60,12 @@ sap.ui.define([
 
             // Call OData unbound action getDeliveryRoute
             const oModel   = oCtx.getModel();
-            const oBinding = oModel.bindContext(`/getDeliveryRoute(deliveryDoc='${deliveryDoc}')`);
+            const oBinding = oModel.bindContext("/getDeliveryRoute(...)");
+            oBinding.setParameter("deliveryDoc", deliveryDoc);
 
             oBinding.execute().then(() => {
-                const oResult = oBinding.getBoundContext().getObject();
-
+                return oBinding.getBoundContext().requestObject();
+            }).then(oResult => {
                 if (!oResult) {
                     handler._showError("No route data returned.");
                     return;
