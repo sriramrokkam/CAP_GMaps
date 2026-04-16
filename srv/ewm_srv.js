@@ -125,13 +125,16 @@ module.exports = class EwmService extends cds.ApplicationService {
                 if (!header || !header.ShippingPoint || !header.ShipToParty) {
                     return req.error(404, `Delivery ${deliveryDoc} not found or missing ShippingPoint/ShipToParty`);
                 }
+                console.log(`[getDeliveryRoute] ShippingPoint=${header.ShippingPoint} ShipToParty=${header.ShipToParty}`);
 
                 // 2. Resolve ShippingPoint address via BP API
                 const fromAddress = await _resolveAddress(bpApi, header.ShippingPoint, SANDBOX_KEY);
+                console.log(`[getDeliveryRoute] fromAddress="${fromAddress}"`);
                 if (!fromAddress) return req.error(404, `Could not resolve address for ShippingPoint ${header.ShippingPoint}`);
 
                 // 3. Resolve ShipToParty address via BP API
                 const toAddress = await _resolveAddress(bpApi, header.ShipToParty, SANDBOX_KEY);
+                console.log(`[getDeliveryRoute] toAddress="${toAddress}"`);
                 if (!toAddress) return req.error(404, `Could not resolve address for ShipToParty ${header.ShipToParty}`);
 
                 // 4. Delegate to GmapsService.getDirections (persists route automatically)

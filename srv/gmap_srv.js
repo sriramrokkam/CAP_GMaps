@@ -131,32 +131,11 @@ module.exports = class GmapsService extends cds.ApplicationService {
                     });
 
             } catch (error) {
-                console.error('=== ERROR DETAILS ===');
-                
-                if (error.response) {
-                    // HTTP error from destination/API
-                    console.error('API error:', error.response.status, error.response.statusText);
-                    console.error('Response data:', JSON.stringify(error.response.data, null, 2));
-                    req.error(error.response.status, error.response.data?.error_message || 'External API error');
-                } else if (error.request) {
-                    // Request made but no response received
-                    console.error('No response received:', error.message);
-                    console.error('Request config:', error.config);
-                    req.error(503, 'Google Maps API is unreachable');
-                } else if (error.code) {
-                    // Database or CDS error
-                    console.error('Database/CDS error:', error.message);
-                    console.error('Error code:', error.code);
-                    console.error('Stack:', error.stack);
-                    req.error(500, `Database error: ${error.message}`);
-                } else {
-                    // Other errors (setup, configuration, etc.)
-                    console.error('Request setup error:', error.message);
-                    console.error('Stack:', error.stack);
-                    req.error(500, `Failed to fetch directions: ${error.message}`);
-                }
-                
-                console.error('=== END ERROR DETAILS ===');
+                console.error('=== getDirections ERROR ===');
+                console.error('Message:', error.message);
+                console.error('Stack:', error.stack);
+                console.error('=== END ERROR ===');
+                return req.error(500, `Failed to fetch directions: ${error.message}`);
             }
         });
 

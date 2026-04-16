@@ -1,6 +1,7 @@
 sap.ui.define([
-    "sap/m/MessageToast"
-], function (MessageToast) {
+    "sap/m/MessageToast",
+    "sap/ui/core/Fragment"
+], function (MessageToast, Fragment) {
     "use strict";
 
     let _dialog = null;
@@ -88,7 +89,7 @@ sap.ui.define([
 
         _getDialog: function () {
             if (_dialog) return Promise.resolve(_dialog);
-            return sap.ui.core.Fragment.load({
+            return Fragment.load({
                 id: "driverAssignFrag",
                 name: "ewm.deliveries.ext.fragment.DriverAssign",
                 controller: handler
