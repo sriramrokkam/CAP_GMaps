@@ -48,15 +48,15 @@ async function start(db) {
 
             // 5-min Teams location timer: reset on each message
             if (_timers[topic]) clearTimeout(_timers[topic]);
-            _timers[topic] = setTimeout(() => {
-                teamsNotify.post('LOCATION', {
+            _timers[topic] = setTimeout(async () => {
+                await teamsNotify.post('LOCATION', {
                     TruckRegistration: gps.truck || null,
                     MobileNumber:      gps.mobile || '',
                     DeliveryDocument:  gps.deliveryDoc || topic.replace('gps-', ''),
                     Latitude:          gps.lat,
                     Longitude:         gps.lng,
                     RecordedAt:        gps.recordedAt
-                });
+                }).catch(err => console.error('Teams location timer failed:', err.message));
                 delete _timers[topic];
             }, 5 * 60 * 1000);
         }
