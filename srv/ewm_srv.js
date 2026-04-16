@@ -19,15 +19,78 @@ module.exports = class EwmService extends cds.ApplicationService {
 
         const { OutboundDeliveries, DeliveryItems } = this.entities;
 
-        // ── LIST: proxy to EWM OData, upsert to local DB ─────────────────
+        // ── LIST + SINGLE READ: proxy to EWM OData, upsert to local DB ──
         this.on('READ', 'OutboundDeliveries', async (req) => {
             const { query } = req;
 
+            // Detect single-entity read by key (Object Page)
+            // CDS WHERE AST for key access: [{ref:['DeliveryDocument']}, '=', {val:'80000002'}]
+            // Detect single-entity read by key (Object Page)
+            // For key access like OutboundDeliveries('80000002'), CDS puts key in req.data, not WHERE
+            const where = query.SELECT?.where;
+            const pairs = where ? _extractFilters(where) : [];
+            const reqKey = req.data?.DeliveryDocument;
+            const keyOnly = reqKey ? true : (pairs.length === 1 && pairs[0].field === 'DeliveryDocument');
+            const singleDeliveryDoc = reqKey || (keyOnly ? pairs[0]?.value : null);
+            console.log('[READ OutboundDeliveries] reqKey:', reqKey, 'keyOnly:', keyOnly);
+
+            // For single-entity reads, serve from local DB (already upserted by list reads)
+            // This avoids the key-predicate mismatch error and returns driver/distance fields
+            if (keyOnly || reqKey) {
+                const deliveryDoc = singleDeliveryDoc;
+                const row = await cds.run(
+                    SELECT.one.from(OutboundDeliveries).where({ DeliveryDocument: deliveryDoc })
+                );
+                if (row) {
+                    // Enrich with driver assignment data
+                    const { DriverAssignment } = cds.entities('iot_schema');
+                    if (DriverAssignment) {
+                        const a = await cds.run(
+                            SELECT.one.from(DriverAssignment)
+                                .where({ DeliveryDocument: deliveryDoc, Status: { '!=': 'DELIVERED' } })
+                                .columns('MobileNumber','TruckRegistration','Status','EstimatedDistance','EstimatedDuration')
+                        ).catch(() => null);
+                        if (a) {
+                            row.DriverStatus      = a.Status;
+                            row.DriverMobile      = a.MobileNumber;
+                            row.DriverTruck       = a.TruckRegistration || null;
+                            row.EstimatedDistance  = a.EstimatedDistance || row.EstimatedDistance || null;
+                            row.EstimatedDuration  = a.EstimatedDuration || row.EstimatedDuration || null;
+                        }
+                    }
+                    return row;
+                }
+                // Not in local DB yet — fetch this specific delivery from EWM API
+                const singleUrl = `/s4hanacloud/sap/opu/odata/sap/API_OUTBOUND_DELIVERY_SRV;v=0002/A_OutbDeliveryHeader('${deliveryDoc}')` +
+                    `?$select=DeliveryDocument,ActualDeliveryRoute,ShippingPoint,ShipToParty,` +
+                    `SalesOrganization,ShippingCondition,HeaderGrossWeight,HeaderNetWeight,` +
+                    `HdrGoodsMvtIncompletionStatus,HeaderBillgIncompletionStatus,DeliveryDate`;
+                try {
+                    const singleRes = await ewmApi.send({ method: 'GET', path: singleUrl, headers: { 'APIKey': SANDBOX_KEY } });
+                    const d = singleRes?.d || singleRes;
+                    if (d && d.DeliveryDocument === deliveryDoc) {
+                        const now = new Date().toISOString();
+                        const singleRow = {
+                            DeliveryDocument: d.DeliveryDocument, ActualDeliveryRoute: d.ActualDeliveryRoute,
+                            ShippingPoint: d.ShippingPoint, ShipToParty: d.ShipToParty,
+                            SalesOrganization: d.SalesOrganization, ShippingCondition: d.ShippingCondition,
+                            HeaderGrossWeight: parseFloat(d.HeaderGrossWeight) || 0, HeaderNetWeight: parseFloat(d.HeaderNetWeight) || 0,
+                            HdrGoodsMvtIncompletionStatus: d.HdrGoodsMvtIncompletionStatus || null,
+                            HeaderBillgIncompletionStatus: d.HeaderBillgIncompletionStatus || null,
+                            DeliveryDate: _parseODataDate(d.DeliveryDate), createdAt: now, modifiedAt: now
+                        };
+                        cds.run(UPSERT.into(OutboundDeliveries).entries(singleRow)).catch(() => {});
+                        return singleRow;
+                    }
+                } catch (e) {
+                    console.error(`Single delivery fetch failed for ${deliveryDoc}:`, e.message);
+                }
+                return req.error(404, `Delivery ${deliveryDoc} not found`);
+            }
+
             // Build OData $filter from CDS WHERE clause
             const filters = [];
-            const where = query.SELECT?.where;
             if (where) {
-                const pairs = _extractFilters(where);
                 pairs.forEach(({ field, value }) => {
                     const map = {
                         DeliveryDocument:                 'DeliveryDocument',
