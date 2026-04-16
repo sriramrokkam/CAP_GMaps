@@ -17,10 +17,25 @@ service EwmService {
             HeaderNetWeight         : Decimal(13,3);
     }
 
+    // Virtual entity — used only as action return type, not persisted
+    entity DeliveryItems {
+        key DeliveryDocumentItem : String(6);
+            Material             : String(40);
+            MaterialName         : String(100);
+            DeliveryQuantity     : Decimal(13,3);
+            DeliveryQuantityUnit : String(3);
+            Plant                : String(4);
+            StorageLocation      : String(4);
+            TransportationGroup  : String(4);
+    }
+
     // Expose RouteDirections so the action return type is valid within this service
     @readonly
     entity RouteDirections as projection on gmaps_schema.RouteDirections;
 
     @restrict: [{ grant: 'EXECUTE', to: 'gmaps_user' }]
     action getDeliveryRoute(deliveryDoc: String) returns RouteDirections;
+
+    @restrict: [{ grant: 'EXECUTE', to: 'gmaps_user' }]
+    action getDeliveryItems(deliveryDoc: String) returns array of DeliveryItems;
 }
