@@ -4,16 +4,8 @@
     xmlns:l="sap.ui.layout">
 
     <VBox id="deliveryItemsContainer"
-          core:require="{ handler: 'ewm/deliveries/ext/fragment/DeliveryItems' }">
-
-        <!-- Load button -->
-        <HBox id="itemsActionBar" class="sapUiSmallMarginBottom" alignItems="Center">
-            <Button id="btnLoadItems"
-                    text="Load Items"
-                    icon="sap-icon://product"
-                    type="Emphasized"
-                    press="handler.onLoadItems"/>
-        </HBox>
+          core:require="{ handler: 'ewm/deliveries/ext/fragment/DeliveryItems' }"
+          afterRendering="handler.onContainerRendered">
 
         <!-- Error message -->
         <MessageStrip id="itemsErrorStrip" visible="false" type="Error"
@@ -23,7 +15,8 @@
         <Table id="deliveryItemsTable"
                visible="false"
                noDataText="No items found for this delivery."
-               class="sapUiSmallMarginTop">
+               class="sapUiSmallMarginTop"
+               busyIndicatorDelay="0">
             <columns>
                 <Column width="6rem">
                     <Text text="Item"/>

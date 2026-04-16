@@ -146,7 +146,17 @@ sap.ui.define([
                         suppressMarkers: false,
                         polylineOptions: { strokeColor: "#0854A0", strokeWeight: 5 }
                     });
+                    // DirectionsRenderer.setDirections() requires geocoded_waypoints to
+                    // render the A/B markers — synthesise two entries (origin + destination)
+                    // if the stored rawData doesn't already include them.
+                    const geocodedWaypoints = parsed.geocoded_waypoints && parsed.geocoded_waypoints.length >= 2
+                        ? parsed.geocoded_waypoints
+                        : [
+                            { geocoder_status: "OK", types: ["route"] },
+                            { geocoder_status: "OK", types: ["route"] }
+                          ];
                     renderer.setDirections({
+                        geocoded_waypoints: geocodedWaypoints,
                         routes: parsed.routes,
                         request: {
                             origin: oDir.origin,
@@ -165,7 +175,7 @@ sap.ui.define([
                 }
             }
 
-            // Fallback: straight-line polyline
+            // Fallback: explicit A/B markers + straight-line polyline
             new google.maps.Marker({ position: { lat: swLat, lng: swLng }, map, label: "A", title: oDir.origin });
             new google.maps.Marker({ position: { lat: neLat, lng: neLng }, map, label: "B", title: oDir.destination });
             new google.maps.Polyline({
