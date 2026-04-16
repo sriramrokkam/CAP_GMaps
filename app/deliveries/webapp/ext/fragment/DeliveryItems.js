@@ -4,16 +4,21 @@ sap.ui.define([
 ], function (JSONModel) {
     "use strict";
 
+    let _loaded = false; // guard: fetch only once per page open
+
     const handler = {
 
-        // Called via afterRendering on the VBox in fragment XML
+        // Fired by the invisible sap.ui.core.HTML control's afterRendering event
         onContainerRendered: function (oEvent) {
-            const oSource = oEvent.getSource ? oEvent.getSource() : null;
-            handler._loadWithRetry(oSource, 0);
+            if (_loaded) return;
+            // Walk up to the VBox to get the binding context
+            const oHtml = oEvent.getSource ? oEvent.getSource() : null;
+            const oVBox = oHtml && oHtml.getParent ? oHtml.getParent() : null;
+            handler._loadWithRetry(oVBox, 0);
         },
 
         _loadWithRetry: function (oContainer, attempt) {
-            const MAX = 15;
+            const MAX = 20;
             const oCtx = oContainer && oContainer.getBindingContext
                 ? oContainer.getBindingContext()
                 : null;
@@ -25,9 +30,11 @@ sap.ui.define([
                 return;
             }
 
-            const deliveryDoc = oCtx.getObject().DeliveryDocument;
+            const obj = oCtx.getObject();
+            const deliveryDoc = obj && obj.DeliveryDocument;
             if (!deliveryDoc) return;
 
+            _loaded = true;
             handler._fetchItems(oCtx.getModel(), deliveryDoc);
         },
 
@@ -62,6 +69,7 @@ sap.ui.define([
                 }
             }).catch(err => {
                 handler._showError(err.message || "Failed to load delivery items.");
+                _loaded = false; // allow retry on next navigation
             }).finally(() => {
                 const oTbl = handler._find("deliveryItemsTable");
                 if (oTbl) oTbl.setBusy(false);

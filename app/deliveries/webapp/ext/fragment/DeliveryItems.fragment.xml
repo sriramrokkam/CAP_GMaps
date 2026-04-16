@@ -4,8 +4,12 @@
     xmlns:l="sap.ui.layout">
 
     <VBox id="deliveryItemsContainer"
-          core:require="{ handler: 'ewm/deliveries/ext/fragment/DeliveryItems' }"
-          afterRendering="handler.onContainerRendered">
+          core:require="{ handler: 'ewm/deliveries/ext/fragment/DeliveryItems' }">
+
+        <!-- Invisible trigger: fires afterRendering once the fragment is in the DOM -->
+        <core:HTML id="itemsAutoLoader"
+                   content="&lt;span style='display:none'&gt;&lt;/span&gt;"
+                   afterRendering="handler.onContainerRendered"/>
 
         <!-- Error message -->
         <MessageStrip id="itemsErrorStrip" visible="false" type="Error"
