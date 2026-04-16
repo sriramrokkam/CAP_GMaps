@@ -103,11 +103,19 @@
               "content": {
                 "body": {
                   "sections": {
+                    "DeliveryItems": {
+                      "template": "ewm.deliveries.ext.fragment.DeliveryItems",
+                      "position": {
+                        "placement": "After",
+                        "anchor": "fe::FacetSection::GeneralInfo"
+                      },
+                      "title": "Delivery Items"
+                    },
                     "DeliveryMap": {
                       "template": "ewm.deliveries.ext.fragment.DeliveryMap",
                       "position": {
                         "placement": "After",
-                        "anchor": "fe::FacetSection::GeneralInfo"
+                        "anchor": "fe::CustomSubSection::DeliveryItems"
                       },
                       "title": "Route & Map"
                     }
