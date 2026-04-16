@@ -59,9 +59,9 @@ module.exports = class GmapsService extends cds.ApplicationService {
                 });
                 // Check API response status
                 if (response.status !== 'OK') {
-                    console.error('Google Maps API error:', response.status);
                     const errorMsg = response.error_message || response.status;
-                    return req.error(400, `Google Maps API error: ${errorMsg}`);
+                    console.error(`Google Maps API returned status "${response.status}" for route "${from}" → "${to}": ${errorMsg}`);
+                    return req.error(400, `Google Maps API error (status: ${response.status}) for route "${from}" to "${to}": ${errorMsg}`);
                 }
 
                 // Validate routes exist

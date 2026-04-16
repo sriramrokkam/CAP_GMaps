@@ -137,10 +137,28 @@ module.exports = class EwmService extends cds.ApplicationService {
                 console.log(`[getDeliveryRoute] toAddress="${toAddress}"`);
                 if (!toAddress) return req.error(404, `Could not resolve address for ShipToParty ${header.ShipToParty}`);
 
-                // 4. Delegate to GmapsService.getDirections (persists route automatically)
-                const result = await gmaps.send('getDirections', { from: fromAddress, to: toAddress });
+                // 4. Validate addresses have enough content to geocode
+                const MIN_ADDR_LEN = 6; // anything shorter is likely just a code (e.g. "DEHAM")
+                if (fromAddress.replace(/[,\s]/g, '').length < MIN_ADDR_LEN) {
+                    return req.error(400, `ShippingPoint address "${fromAddress}" is too short to geocode — BP address data may be incomplete`);
+                }
+                if (toAddress.replace(/[,\s]/g, '').length < MIN_ADDR_LEN) {
+                    return req.error(400, `ShipToParty address "${toAddress}" is too short to geocode — BP address data may be incomplete`);
+                }
 
-                // 5. Write distance/duration back to OutboundDeliveries row (fire-and-forget)
+                // 5. Delegate to GmapsService.getDirections (persists route automatically)
+                let result;
+                try {
+                    result = await gmaps.send('getDirections', { from: fromAddress, to: toAddress });
+                } catch (gmapsError) {
+                    // Surface inner error details (CAP wraps remote errors as 502)
+                    const innerBody = gmapsError.response?.body || gmapsError.cause?.message || '';
+                    const innerMsg  = typeof innerBody === 'string' ? innerBody : JSON.stringify(innerBody);
+                    console.error('getDeliveryRoute gmaps error:', JSON.stringify(gmapsError, null, 2));
+                    return req.error(502, `GmapsService.getDirections failed for "${fromAddress}" → "${toAddress}": ${gmapsError.message}${innerMsg ? ' | ' + innerMsg : ''}`);
+                }
+
+                // 6. Write distance/duration back to OutboundDeliveries row (fire-and-forget)
                 if (result && result.distance) {
                     cds.run(
                         UPDATE(OutboundDeliveries)
@@ -161,7 +179,7 @@ module.exports = class EwmService extends cds.ApplicationService {
 
                 return result;
             } catch (error) {
-                console.error('getDeliveryRoute error:', error.message);
+                console.error('getDeliveryRoute error:', JSON.stringify(error, null, 2));
                 return req.error(500, `Failed to get delivery route: ${error.message}`);
             }
         });
@@ -220,15 +238,23 @@ module.exports = class EwmService extends cds.ApplicationService {
 
 async function _resolveAddress(bpApi, businessPartner, sandboxKey) {
     try {
-        const url = `/s4hanacloud/sap/opu/odata/sap/API_BUSINESS_PARTNER/A_BusinessPartner('${businessPartner}')/to_BusinessPartnerAddress?$top=1&$select=StreetName,CityName,PostalCode,Country`;
+        const url = `/s4hanacloud/sap/opu/odata/sap/API_BUSINESS_PARTNER/A_BusinessPartner('${businessPartner}')/to_BusinessPartnerAddress?$top=1&$select=StreetName,HouseNumber,CityName,PostalCode,Region,Country`;
         const res = await bpApi.send({
             method: 'GET', path: url,
             headers: { 'APIKey': sandboxKey }
         });
         const addr = (res?.d?.results || res?.value || [])[0];
         if (!addr) return null;
-        return [addr.StreetName, addr.CityName, addr.PostalCode, addr.Country]
-            .filter(Boolean).join(', ');
+        const parts = [
+            addr.HouseNumber && addr.StreetName ? `${addr.HouseNumber} ${addr.StreetName}` : addr.StreetName,
+            addr.CityName,
+            addr.Region,
+            addr.PostalCode,
+            addr.Country
+        ];
+        const resolved = parts.filter(Boolean).join(', ');
+        console.log(`[_resolveAddress] BP=${businessPartner} raw=${JSON.stringify(addr)} resolved="${resolved}"`);
+        return resolved || null;
     } catch (e) {
         console.error(`BP address lookup failed for ${businessPartner}:`, e.message);
         return null;
