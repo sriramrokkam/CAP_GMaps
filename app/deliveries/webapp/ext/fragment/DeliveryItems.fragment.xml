@@ -1,0 +1,56 @@
+<core:FragmentDefinition
+    xmlns:core="sap.ui.core"
+    xmlns="sap.m"
+    xmlns:l="sap.ui.layout">
+
+    <VBox id="deliveryItemsContainer"
+          core:require="{ handler: 'ewm/deliveries/ext/fragment/DeliveryItems' }">
+
+        <!-- Error message -->
+        <MessageStrip id="itemsErrorStrip" visible="false" type="Error"
+                      showCloseButton="true" class="sapUiSmallMarginBottom"/>
+
+        <!-- Items table -->
+        <Table id="deliveryItemsTable"
+               noDataText="No items found for this delivery."
+               class="sapUiSmallMarginTop">
+            <columns>
+                <Column width="6rem">
+                    <Text text="Item"/>
+                </Column>
+                <Column width="10rem">
+                    <Text text="Material"/>
+                </Column>
+                <Column>
+                    <Text text="Description"/>
+                </Column>
+                <Column width="8rem" hAlign="Right">
+                    <Text text="Quantity"/>
+                </Column>
+                <Column width="6rem">
+                    <Text text="Plant"/>
+                </Column>
+                <Column width="7rem">
+                    <Text text="Storage Loc."/>
+                </Column>
+                <Column width="8rem">
+                    <Text text="Transport Grp"/>
+                </Column>
+            </columns>
+            <items>
+                <ColumnListItem>
+                    <cells>
+                        <Text text="{items>DeliveryDocumentItem}"/>
+                        <Text text="{items>Material}"/>
+                        <Text text="{items>MaterialName}"/>
+                        <Text text="{= ${items>DeliveryQuantity} + ' ' + ${items>DeliveryQuantityUnit} }"/>
+                        <Text text="{items>Plant}"/>
+                        <Text text="{items>StorageLocation}"/>
+                        <Text text="{items>TransportationGroup}"/>
+                    </cells>
+                </ColumnListItem>
+            </items>
+        </Table>
+
+    </VBox>
+</core:FragmentDefinition>
