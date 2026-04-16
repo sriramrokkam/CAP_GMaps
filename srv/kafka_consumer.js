@@ -77,12 +77,3 @@ function clearTopicTimer(topicName) {
 }
 
 module.exports = { start, clearTopicTimer };
-
-function clearTopicTimer(topicName) {
-    if (_timers[topicName]) {
-        clearTimeout(_timers[topicName]);
-        delete _timers[topicName];
-    }
-}
-
-module.exports = { start, clearTopicTimer };
