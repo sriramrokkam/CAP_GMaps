@@ -6,6 +6,7 @@ module.exports = class EwmService extends cds.ApplicationService {
     async init() {
         const ewmApi = await cds.connect.to('EWM-API');
         const bpApi  = await cds.connect.to('BP-API');
+        const gmaps  = await cds.connect.to('GmapsService');
         const SANDBOX_KEY = process.env.SAP_SANDBOX_API_KEY || '';
 
         // ── LIST: proxy to EWM OData ──────────────────────────────────────
@@ -62,28 +63,32 @@ module.exports = class EwmService extends cds.ApplicationService {
             const { deliveryDoc } = req.data;
             if (!deliveryDoc) return req.error(400, 'deliveryDoc is required');
 
-            // 1. Fetch delivery header to get ShippingPoint + ShipToParty
-            const headerUrl = `/s4hanacloud/sap/opu/odata/sap/API_OUTBOUND_DELIVERY_SRV;v=0002/A_OutbDeliveryHeader('${deliveryDoc}')?$select=ShippingPoint,ShipToParty`;
-            const header = await ewmApi.send({
-                method: 'GET', path: headerUrl,
-                headers: { 'APIKey': SANDBOX_KEY }
-            });
-            if (!header || !header.ShippingPoint || !header.ShipToParty) {
-                return req.error(404, `Delivery ${deliveryDoc} not found or missing ShippingPoint/ShipToParty`);
+            try {
+                // 1. Fetch delivery header to get ShippingPoint + ShipToParty
+                const headerUrl = `/s4hanacloud/sap/opu/odata/sap/API_OUTBOUND_DELIVERY_SRV;v=0002/A_OutbDeliveryHeader('${deliveryDoc}')?$select=ShippingPoint,ShipToParty`;
+                const header = await ewmApi.send({
+                    method: 'GET', path: headerUrl,
+                    headers: { 'APIKey': SANDBOX_KEY }
+                });
+                if (!header || !header.ShippingPoint || !header.ShipToParty) {
+                    return req.error(404, `Delivery ${deliveryDoc} not found or missing ShippingPoint/ShipToParty`);
+                }
+
+                // 2. Resolve ShippingPoint address via BP API
+                const fromAddress = await _resolveAddress(bpApi, header.ShippingPoint, SANDBOX_KEY);
+                if (!fromAddress) return req.error(404, `Could not resolve address for ShippingPoint ${header.ShippingPoint}`);
+
+                // 3. Resolve ShipToParty address via BP API
+                const toAddress = await _resolveAddress(bpApi, header.ShipToParty, SANDBOX_KEY);
+                if (!toAddress) return req.error(404, `Could not resolve address for ShipToParty ${header.ShipToParty}`);
+
+                // 4. Delegate to GmapsService.getDirections
+                const result = await gmaps.send('getDirections', { from: fromAddress, to: toAddress });
+                return result;
+            } catch (error) {
+                console.error('getDeliveryRoute error:', error.message);
+                return req.error(500, `Failed to get delivery route: ${error.message}`);
             }
-
-            // 2. Resolve ShippingPoint address via BP API
-            const fromAddress = await _resolveAddress(bpApi, header.ShippingPoint, SANDBOX_KEY);
-            if (!fromAddress) return req.error(404, `Could not resolve address for ShippingPoint ${header.ShippingPoint}`);
-
-            // 3. Resolve ShipToParty address via BP API
-            const toAddress = await _resolveAddress(bpApi, header.ShipToParty, SANDBOX_KEY);
-            if (!toAddress) return req.error(404, `Could not resolve address for ShipToParty ${header.ShipToParty}`);
-
-            // 4. Delegate to GmapsService.getDirections
-            const gmaps = await cds.connect.to('GmapsService');
-            const result = await gmaps.send('getDirections', { from: fromAddress, to: toAddress });
-            return result;
         });
 
         return super.init();
