@@ -101,6 +101,24 @@
               "editableHeaderContent": false,
               "contextPath": "/OutboundDeliveries",
               "content": {
+                "header": {
+                  "anchorBarVisible": true,
+                  "visible": true,
+                  "actions": {
+                    "assignDriverAction": {
+                      "press": "ewm.deliveries.ext.fragment.DeliveryHeader.onAssignDriver",
+                      "enabled": true,
+                      "text": "Assign Driver",
+                      "icon": "sap-icon://person-placeholder"
+                    },
+                    "showQRAction": {
+                      "press": "ewm.deliveries.ext.fragment.DeliveryHeader.onShowQR",
+                      "enabled": true,
+                      "text": "Show QR",
+                      "icon": "sap-icon://qr-code"
+                    }
+                  }
+                },
                 "body": {
                   "sections": {
                     "DeliveryItems": {
@@ -120,10 +138,6 @@
                       "title": "Route & Map"
                     }
                   }
-                },
-                "header": {
-                  "anchorBarVisible": true,
-                  "visible": true
                 }
               }
             }

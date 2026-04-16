@@ -59,6 +59,7 @@ module.exports = class EwmService extends cds.ApplicationService {
             });
 
             // OData V2 collection: { d: { results: [...] } }
+            const now = new Date().toISOString();
             const rows = (res?.d?.results || res?.value || []).map(d => ({
                 DeliveryDocument:              d.DeliveryDocument,
                 ActualDeliveryRoute:           d.ActualDeliveryRoute,
@@ -70,7 +71,9 @@ module.exports = class EwmService extends cds.ApplicationService {
                 HeaderNetWeight:               parseFloat(d.HeaderNetWeight) || 0,
                 HdrGoodsMvtIncompletionStatus: d.HdrGoodsMvtIncompletionStatus || null,
                 HeaderBillgIncompletionStatus: d.HeaderBillgIncompletionStatus || null,
-                DeliveryDate:                  _parseODataDate(d.DeliveryDate)
+                DeliveryDate:                  _parseODataDate(d.DeliveryDate),
+                createdAt:                     now,
+                modifiedAt:                    now
             }));
 
             // Upsert into local DB (fire-and-forget — don't block the response)
@@ -135,6 +138,7 @@ module.exports = class EwmService extends cds.ApplicationService {
                 });
 
                 // OData V2 collection: { d: { results: [...] } }
+                const now = new Date().toISOString();
                 const rows = (res?.d?.results || res?.value || []).map(d => ({
                     DeliveryDocument:     d.DeliveryDocument,
                     DeliveryDocumentItem: d.DeliveryDocumentItem,
@@ -143,7 +147,9 @@ module.exports = class EwmService extends cds.ApplicationService {
                     DeliveryQuantityUnit: d.DeliveryQuantityUnit,
                     Plant:                d.Plant,
                     StorageLocation:      d.StorageLocation,
-                    TransportationGroup:  d.TransportationGroup
+                    TransportationGroup:  d.TransportationGroup,
+                    createdAt:            now,
+                    modifiedAt:           now
                 }));
 
                 // Upsert into local DB (fire-and-forget)

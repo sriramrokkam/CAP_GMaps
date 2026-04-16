@@ -6,6 +6,21 @@
     <VBox id="deliveryMapContainer"
           core:require="{ handler: 'ewm/deliveries/ext/fragment/DeliveryMap' }">
 
+        <!-- Auto-loader: fires afterRendering to load driver status without a button press -->
+        <core:HTML id="mapAutoLoader"
+                   content="&lt;span style='display:none'&gt;&lt;/span&gt;"
+                   afterRendering="handler.onSectionRendered"/>
+
+        <!-- Driver assignment status bar (auto-loaded, hidden if no active assignment) -->
+        <HBox id="driverStatusBar" visible="false" class="sapUiTinyMarginBottom"
+              alignItems="Center"
+              style="background:#f0f7ff;border:1px solid #b3d4f5;border-radius:4px;padding:6px 10px;">
+            <core:Icon src="sap-icon://driving-license" color="#0854A0" class="sapUiTinyMarginEnd"/>
+            <ObjectStatus id="driverStatusText" title="Driver" text="" state="Information" class="sapUiSmallMarginEnd"/>
+            <ObjectStatus id="driverTruckText"  title="Truck"  text="" state="None"        class="sapUiSmallMarginEnd"/>
+            <ObjectStatus id="driverStatusState" title="Status" text="" state="Success"/>
+        </HBox>
+
         <!-- Action buttons -->
         <HBox id="mapActionBar" class="sapUiSmallMarginBottom" alignItems="Center">
             <Button id="btnViewMap"
@@ -19,18 +34,6 @@
                     icon="sap-icon://navigation-right-arrow"
                     type="Default"
                     press="handler.onGetDirections"/>
-            <Button id="btnAssignDriver"
-                    text="Assign Driver"
-                    icon="sap-icon://person-placeholder"
-                    type="Default"
-                    press="handler.onAssignDriver"
-                    class="sapUiTinyMarginBegin"/>
-            <Button id="btnShowQR"
-                    text="Show QR"
-                    icon="sap-icon://qr-code"
-                    type="Default"
-                    press="handler.onShowQR"
-                    class="sapUiTinyMarginBegin"/>
         </HBox>
 
         <!-- Loading indicator -->

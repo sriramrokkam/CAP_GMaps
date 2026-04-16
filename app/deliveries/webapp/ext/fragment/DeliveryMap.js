@@ -48,6 +48,48 @@ sap.ui.define([
             handler._triggerRoute(oEvent, "directions");
         },
 
+        // Auto-called when section DOM renders (invisible HTML control afterRendering)
+        onSectionRendered: function (oEvent) {
+            const oHtml = oEvent.getSource ? oEvent.getSource() : null;
+            const oVBox = oHtml && oHtml.getParent ? oHtml.getParent() : null;
+            handler._loadDriverStatusWithRetry(oVBox, 0);
+        },
+
+        _loadDriverStatusWithRetry: function (oVBox, attempt) {
+            const oCtx = oVBox && oVBox.getBindingContext ? oVBox.getBindingContext() : null;
+            if (!oCtx) {
+                if (attempt < 20) {
+                    setTimeout(() => handler._loadDriverStatusWithRetry(oVBox, attempt + 1), 300);
+                }
+                return;
+            }
+            const deliveryDoc = oCtx.getObject && oCtx.getObject().DeliveryDocument;
+            if (deliveryDoc) handler._loadDriverStatus(deliveryDoc);
+        },
+
+        _loadDriverStatus: function (deliveryDoc) {
+            fetch(`/odata/v4/tracking/DriverAssignment?$filter=DeliveryDocument eq '${deliveryDoc}' and Status ne 'DELIVERED'&$top=1&$orderby=AssignedAt desc`, {
+                headers: { "Authorization": "Basic " + btoa("alice:alice") }
+            }).then(r => r.json()).then(data => {
+                const a = data && data.value && data.value[0];
+                const bar = handler._find("driverStatusBar");
+                if (!bar) return;
+                if (!a) { bar.setVisible(false); return; }
+
+                const label  = a.TruckRegistration || a.MobileNumber;
+                const status = a.Status === 'IN_TRANSIT' ? 'In Transit' : a.Status === 'ASSIGNED' ? 'Assigned' : a.Status;
+                const state  = a.Status === 'IN_TRANSIT' ? 'Warning' : 'Success';
+
+                const txt1 = handler._find("driverStatusText");
+                const txt2 = handler._find("driverTruckText");
+                const txt3 = handler._find("driverStatusState");
+                if (txt1) txt1.setText(a.MobileNumber || "");
+                if (txt2) txt2.setText(label);
+                if (txt3) { txt3.setText(status); txt3.setState(state); }
+                bar.setVisible(true);
+            }).catch(() => { /* silent — no assignment */ });
+        },
+
         // ── Core flow ────────────────────────────────────────────────────
 
         _triggerRoute: function (oEvent, targetTab) {
@@ -305,45 +347,6 @@ sap.ui.define([
         },
 
         // ── Driver assignment & truck tracking ───────────────────────────
-
-        onAssignDriver: function (oEvent) {
-            const oSource = oEvent.getSource();
-            const oCtx    = oSource.getBindingContext();
-            if (!oCtx) { MessageToast.show("No delivery selected"); return; }
-            const deliveryDoc = oCtx.getObject().DeliveryDocument;
-            if (!deliveryDoc) { MessageToast.show("No delivery document found"); return; }
-
-            sap.ui.require(["ewm/deliveries/ext/fragment/DriverAssign"], function (DriverAssign) {
-                DriverAssign.openDialog(deliveryDoc, null);
-            });
-        },
-
-        onShowQR: function (oEvent) {
-            const oSource = oEvent.getSource();
-            const oCtx    = oSource.getBindingContext();
-            if (!oCtx) { MessageToast.show("No delivery selected"); return; }
-            const deliveryDoc = oCtx.getObject().DeliveryDocument;
-            if (!deliveryDoc) return;
-
-            fetch(`/odata/v4/tracking/getQRCode`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": "Basic " + btoa("alice:alice")
-                },
-                body: JSON.stringify({ deliveryDoc })
-            }).then(r => r.json()).then(data => {
-                if (!data || !data.QRCodeImage) {
-                    MessageToast.show("No active assignment found for this delivery.");
-                    return;
-                }
-                sap.ui.require(["ewm/deliveries/ext/fragment/DriverAssign"], function (DriverAssign) {
-                    DriverAssign.openDialog(deliveryDoc, data.QRCodeImage);
-                });
-            }).catch(() => {
-                MessageToast.show("Failed to retrieve QR code.");
-            });
-        },
 
         _startTruckTracking: function (deliveryDoc, map) {
             fetch(`/odata/v4/tracking/DriverAssignment?$filter=DeliveryDocument eq '${deliveryDoc}' and Status ne 'DELIVERED'&$top=1&$orderby=AssignedAt desc`, {
