@@ -123,10 +123,9 @@ sap.ui.define([
 
             const neLat = oDir.bounds_northeast_lat, neLng = oDir.bounds_northeast_lng;
             const swLat = oDir.bounds_southwest_lat, swLng = oDir.bounds_southwest_lng;
-            const centerLat = (neLat + swLat) / 2, centerLng = (neLng + swLng) / 2;
 
             const map = new google.maps.Map(mapDiv, {
-                center: { lat: centerLat, lng: centerLng },
+                center: { lat: (neLat + swLat) / 2, lng: (neLng + swLng) / 2 },
                 zoom: 10,
                 mapTypeId: "roadmap"
             });
@@ -137,51 +136,89 @@ sap.ui.define([
             ));
             setTimeout(() => google.maps.event.trigger(map, "resize"), 100);
 
+            // ── Parse stored rawData and draw route manually ──────────────
+            // DirectionsRenderer.setDirections() only works with live DirectionsResult
+            // objects returned by the JS SDK — it cannot accept plain JSON from a DB.
+            // Instead: decode the overview_polyline for the route line, and place
+            // explicit A/B markers at the leg's actual start/end coordinates.
+            let routeDrawn = false;
             if (oDir.rawData) {
                 let parsed = null;
                 try { parsed = JSON.parse(oDir.rawData); } catch (e) { /* ignore */ }
-                if (parsed && parsed.routes && parsed.routes.length > 0) {
-                    const renderer = new google.maps.DirectionsRenderer({
+
+                const route = parsed && parsed.routes && parsed.routes[0];
+                const leg   = route && route.legs && route.legs[0];
+
+                if (leg) {
+                    const originLatLng = new google.maps.LatLng(
+                        leg.start_location.lat, leg.start_location.lng
+                    );
+                    const destLatLng = new google.maps.LatLng(
+                        leg.end_location.lat, leg.end_location.lng
+                    );
+
+                    // A marker at origin
+                    new google.maps.Marker({
+                        position: originLatLng,
                         map,
-                        suppressMarkers: false,
-                        polylineOptions: { strokeColor: "#0854A0", strokeWeight: 5 }
+                        label: { text: "A", color: "white", fontWeight: "bold" },
+                        title: leg.start_address
                     });
-                    // DirectionsRenderer.setDirections() requires geocoded_waypoints to
-                    // render the A/B markers — synthesise two entries (origin + destination)
-                    // if the stored rawData doesn't already include them.
-                    const geocodedWaypoints = parsed.geocoded_waypoints && parsed.geocoded_waypoints.length >= 2
-                        ? parsed.geocoded_waypoints
-                        : [
-                            { geocoder_status: "OK", types: ["route"] },
-                            { geocoder_status: "OK", types: ["route"] }
-                          ];
-                    renderer.setDirections({
-                        geocoded_waypoints: geocodedWaypoints,
-                        routes: parsed.routes,
-                        request: {
-                            origin: oDir.origin,
-                            destination: oDir.destination,
-                            travelMode: google.maps.TravelMode.DRIVING
-                        }
+
+                    // B marker at destination
+                    new google.maps.Marker({
+                        position: destLatLng,
+                        map,
+                        label: { text: "B", color: "white", fontWeight: "bold" },
+                        title: leg.end_address
                     });
+
+                    // Decode overview_polyline for the route line
+                    const encodedPath = route.overview_polyline && route.overview_polyline.points;
+                    if (encodedPath && google.maps.geometry && google.maps.geometry.encoding) {
+                        const path = google.maps.geometry.encoding.decodePath(encodedPath);
+                        new google.maps.Polyline({
+                            path,
+                            geodesic: true,
+                            strokeColor: "#0854A0",
+                            strokeWeight: 5,
+                            strokeOpacity: 0.85
+                        }).setMap(map);
+                    } else {
+                        // geometry library not loaded — draw straight line as fallback
+                        new google.maps.Polyline({
+                            path: [originLatLng, destLatLng],
+                            geodesic: true,
+                            strokeColor: "#0854A0",
+                            strokeWeight: 4
+                        }).setMap(map);
+                    }
+
+                    // Info window at midpoint
+                    const midLat = (leg.start_location.lat + leg.end_location.lat) / 2;
+                    const midLng = (leg.start_location.lng + leg.end_location.lng) / 2;
                     new google.maps.InfoWindow({
-                        content: `<div style="padding:6px;font-family:sans-serif;max-width:220px;">
-                            <strong>${oDir.origin}</strong><br/>→ <strong>${oDir.destination}</strong><br/>
-                            <span style="color:#555">📏 ${oDir.distance}&nbsp; ⏱ ${oDir.duration}</span>
+                        content: `<div style="padding:6px;font-family:sans-serif;max-width:240px;">
+                            <strong>${leg.start_address}</strong><br/>
+                            ↓ <strong>${leg.end_address}</strong><br/>
+                            <span style="color:#555">📏 ${oDir.distance}&nbsp;&nbsp;⏱ ${oDir.duration}</span>
                         </div>`,
-                        position: { lat: centerLat, lng: centerLng }
+                        position: { lat: midLat, lng: midLng }
                     }).open(map);
-                    return;
+
+                    routeDrawn = true;
                 }
             }
 
-            // Fallback: explicit A/B markers + straight-line polyline
-            new google.maps.Marker({ position: { lat: swLat, lng: swLng }, map, label: "A", title: oDir.origin });
-            new google.maps.Marker({ position: { lat: neLat, lng: neLng }, map, label: "B", title: oDir.destination });
-            new google.maps.Polyline({
-                path: [{ lat: swLat, lng: swLng }, { lat: neLat, lng: neLng }],
-                geodesic: true, strokeColor: "#0854A0", strokeWeight: 4
-            }).setMap(map);
+            if (!routeDrawn) {
+                // Last-resort fallback using stored bounds corners
+                new google.maps.Marker({ position: { lat: swLat, lng: swLng }, map, label: "A", title: oDir.origin });
+                new google.maps.Marker({ position: { lat: neLat, lng: neLng }, map, label: "B", title: oDir.destination });
+                new google.maps.Polyline({
+                    path: [{ lat: swLat, lng: swLng }, { lat: neLat, lng: neLng }],
+                    geodesic: true, strokeColor: "#0854A0", strokeWeight: 4
+                }).setMap(map);
+            }
         },
 
         // ── Directions rendering ─────────────────────────────────────────
@@ -262,7 +299,7 @@ sap.ui.define([
                 if (_mapsLoading) { _mapsQueue.push(resolve); return; }
                 _mapsLoading = true;
                 const s = document.createElement("script");
-                s.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&loading=async`;
+                s.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=geometry&loading=async`;
                 s.async = true;
                 s.defer = true;
                 s.onload = () => {
