@@ -43,12 +43,12 @@ module.exports = {
         }
     },
 
-    async closeTopic(topicName) {
+    async deleteTopic(topicName) {
         try {
             await _ensureConnected();
             await admin.deleteTopics({ topics: [topicName] });
         } catch (err) {
-            console.error('kafka_producer.closeTopic failed:', err.message);
+            console.error('kafka_producer.deleteTopic failed:', err.message);
             throw err;
         }
     }
