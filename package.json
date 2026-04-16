@@ -11,7 +11,9 @@
     "@sap/xssec": "^4",
     "axios": "^1",
     "express": "^4",
+    "kafkajs": "^2",
     "passport": "^0.7.0",
+    "qrcode": "^1",
     "uuid": "^11"
   },
   "devDependencies": {
