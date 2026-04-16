@@ -2,7 +2,9 @@ const { Kafka } = require('kafkajs');
 
 const kafka = new Kafka({
     clientId: 'cap-gps-producer',
-    brokers: [(process.env.KAFKA_BROKER || 'localhost:9092')]
+    brokers: [(process.env.KAFKA_BROKER || 'localhost:9092')],
+    connectionTimeout: 5000,
+    requestTimeout: 5000
 });
 
 const admin    = kafka.admin();

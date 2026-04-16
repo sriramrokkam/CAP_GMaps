@@ -67,10 +67,10 @@ module.exports = class TrackingService extends cds.ApplicationService {
                     EstimatedDuration: estDuration
                 };
 
-                // 7. Persist, create Kafka topic, notify Teams
+                // 7. Persist, then fire-and-forget Kafka + Teams (don't block response)
                 await INSERT.into(DriverAssignment).entries(assignment);
-                await kafkaProducer.createTopic(topic);
-                await teamsNotify.post('ASSIGNED', assignment);
+                kafkaProducer.createTopic(topic).catch(err => console.error('Kafka createTopic (non-fatal):', err.message));
+                teamsNotify.post('ASSIGNED', assignment).catch(err => console.error('Teams notify (non-fatal):', err.message));
 
                 return assignment;
             } catch (err) {
@@ -191,11 +191,11 @@ module.exports = class TrackingService extends cds.ApplicationService {
                 // 4. Stop consumer timer for this topic
                 kafkaConsumer.clearTopicTimer(assignment.KafkaTopic);
 
-                // 5. Delete Kafka topic
-                await kafkaProducer.deleteTopic(assignment.KafkaTopic);
+                // 5. Delete Kafka topic (fire-and-forget — don't block response)
+                kafkaProducer.deleteTopic(assignment.KafkaTopic).catch(err => console.error('Kafka deleteTopic (non-fatal):', err.message));
 
-                // 6. Notify Teams
-                await teamsNotify.post('DELIVERED', { ...assignment, DeliveredAt: deliveredAt });
+                // 6. Notify Teams (fire-and-forget)
+                teamsNotify.post('DELIVERED', { ...assignment, DeliveredAt: deliveredAt }).catch(err => console.error('Teams notify (non-fatal):', err.message));
 
                 return true;
             } catch (err) {
