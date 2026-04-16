@@ -21,7 +21,6 @@ service EwmService {
     entity DeliveryItems {
         key DeliveryDocumentItem : String(6);
             Material             : String(40);
-            MaterialName         : String(100);
             DeliveryQuantity     : Decimal(13,3);
             DeliveryQuantityUnit : String(3);
             Plant                : String(4);

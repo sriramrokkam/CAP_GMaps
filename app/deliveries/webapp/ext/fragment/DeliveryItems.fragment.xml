@@ -21,9 +21,6 @@
                 <Column width="10rem">
                     <Text text="Material"/>
                 </Column>
-                <Column>
-                    <Text text="Description"/>
-                </Column>
                 <Column width="8rem" hAlign="Right">
                     <Text text="Quantity"/>
                 </Column>
@@ -42,7 +39,6 @@
                     <cells>
                         <Text text="{items>DeliveryDocumentItem}"/>
                         <Text text="{items>Material}"/>
-                        <Text text="{items>MaterialName}"/>
                         <Text text="{= ${items>DeliveryQuantity} + ' ' + ${items>DeliveryQuantityUnit} }"/>
                         <Text text="{items>Plant}"/>
                         <Text text="{items>StorageLocation}"/>
