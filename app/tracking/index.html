@@ -10,10 +10,11 @@
         data-sap-ui-libs="sap.m, sap.ui.layout, sap.f, sap.uxap"
         data-sap-ui-compatVersion="edge"
         data-sap-ui-async="true"
+        data-sap-ui-frame-options="trusted"
         data-sap-ui-onInit="onInit">
     </script>
     <style>
-        body { margin: 0; padding: 0; }
+        html, body, body > div { height: 100%; }
         .gpsCoordBox { background: #f5f6f7; border-radius: 8px; padding: 10px 14px; margin: 8px 0; font-family: 'SFMono-Regular', Consolas, monospace; font-size: 0.8125rem; }
     </style>
     <script>
@@ -394,7 +395,7 @@
         }
     </script>
 </head>
-<body class="sapUiBody">
-    <div id="content"></div>
+<body class="sapUiBody sapUiSizeCompact">
+    <div id="content" style="height:100%"></div>
 </body>
 </html>
