@@ -12,11 +12,7 @@ entity DriverAssignment : managed {
         TruckRegistration : String(20)    @title: 'Truck Registration'; // nullable
         AssignedAt        : DateTime      @title: 'Assigned At';
         DeliveredAt       : DateTime      @title: 'Delivered At';       // set on confirmation
-        Status            : String(20) @title: 'Status' enum {
-                              ASSIGNED;
-                              IN_TRANSIT;
-                              DELIVERED;
-                          } = 'ASSIGNED';
+        Status            : String(20) default 'ASSIGNED' @title: 'Status'; // ASSIGNED | IN_TRANSIT | DELIVERED
         KafkaTopic        : String(100)   @title: 'Kafka Topic';        // 'gps-{DeliveryDocument}'
         QRCodeUrl         : String(500)   @title: 'QR Code URL';        // '/tracking/index.html#<ID>'
         QRCodeImage       : LargeString   @title: 'QR Code Image';      // base64 PNG data URL

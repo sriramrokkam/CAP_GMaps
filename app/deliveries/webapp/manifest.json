@@ -116,6 +116,12 @@
                       "enabled": true,
                       "text": "Show QR",
                       "icon": "sap-icon://qr-code"
+                    },
+                    "closeTripAction": {
+                      "press": "ewm.deliveries.ext.controller.ObjectPageExt.onCloseTrip",
+                      "enabled": true,
+                      "text": "Close Trip",
+                      "icon": "sap-icon://complete"
                     }
                   }
                 },
