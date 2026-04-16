@@ -260,3 +260,276 @@ APP_BASE_URL=http://localhost:4004  # Base URL for QR codes
 | Assign Driver hangs | `await kafkaProducer.createTopic()` blocks | Fire-and-forget with `.catch()` |
 | Truck marker invisible | GPS outside route bounds | `map.getBounds().extend(pos); map.fitBounds(bounds)` |
 | Fragment circular dependency | XML `core:require` loads own JS module | Remove `core:require`, use `controller:` param |
+
+---
+
+## Project Status & Completed Features
+
+### Branch: `feature2_gmap_iot`
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Outbound Delivery List Report | Done | Proxied from SAP EWM sandbox, upserted to local SQLite |
+| Delivery Object Page | Done | Delivery Details, Items, Route & Map sections |
+| Google Maps route rendering | Done | Polyline from decoded overview_polyline, A/B markers, info window |
+| Distance/Duration display | Done | Stats bar above map + Delivery Details panel |
+| Driver Assignment (Assign Driver) | Done | Header action → dialog → QR code generation |
+| Show QR Code | Done | Header action → retrieves existing assignment QR |
+| Close Trip | Done | Header action → confirmation popup → marks DELIVERED |
+| Driver Mobile Tracking Page | Done | UI5 ObjectPageLayout (sap.uxap), sap_horizon theme |
+| GPS Tracking (Browser Geolocation) | Done | watchPosition + 30s interval, Simulate GPS for desktop |
+| Live Truck Marker on Map | Done | Polls latestGps every 30s, extends bounds to show marker |
+| Kafka GPS Event Stream | Done | KRaft Docker, topic per delivery, fire-and-forget publish |
+| Teams Notifications | Done | Rich MessageCards for ASSIGNED/LOCATION/DELIVERED |
+| Driver Status in List Report | Done | DriverStatus, Truck, Mobile, Est. Distance/Duration columns |
+| Confirm Delivery (mobile + backend) | Done | Both driver (mobile page) and dispatcher (Close Trip button) |
+
+---
+
+## Phase 3: Teams Chatbot — Design & Requirements
+
+### Goal
+
+Natural language interface in Microsoft Teams for dispatchers to manage deliveries, assign drivers, and track GPS — without switching to the Fiori UI.
+
+### Architecture
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  Microsoft Teams                                              │
+│  ┌─────────────────────────────────────────────────────────┐ │
+│  │ Dispatcher Chat                                          │ │
+│  │ "Show me open deliveries"                                │ │
+│  │ "Assign truck KA-01NA to delivery 80000005"              │ │
+│  │ "Where is the truck for 80000001?"                       │ │
+│  │ "What's the ETA for delivery 80000002?"                  │ │
+│  └────────────────────┬────────────────────────────────────┘ │
+└───────────────────────┼──────────────────────────────────────┘
+                        │ Azure Bot Service
+                        ▼
+┌──────────────────────────────────────────────────────────────┐
+│  LangGraph Agent (Python)                                     │
+│  ┌──────────────┐  ┌──────────────────────────────────────┐ │
+│  │ Claude / GPT  │  │ Tools (OData V4 endpoints)           │ │
+│  │ (reasoning)   │→│                                      │ │
+│  │               │  │ list_open_deliveries()               │ │
+│  │               │  │   GET /odata/v4/ewm/                 │ │
+│  │               │  │       OutboundDeliveries              │ │
+│  │               │  │                                      │ │
+│  │               │  │ get_delivery_details(doc)             │ │
+│  │               │  │   GET /odata/v4/ewm/                 │ │
+│  │               │  │       OutboundDeliveries('{doc}')     │ │
+│  │               │  │                                      │ │
+│  │               │  │ get_delivery_route(doc)               │ │
+│  │               │  │   POST /odata/v4/ewm/getDeliveryRoute│ │
+│  │               │  │                                      │ │
+│  │               │  │ assign_driver(doc, mobile, truck)     │ │
+│  │               │  │   POST /odata/v4/tracking/            │ │
+│  │               │  │       assignDriver                    │ │
+│  │               │  │                                      │ │
+│  │               │  │ get_driver_status(doc)                │ │
+│  │               │  │   GET /odata/v4/tracking/             │ │
+│  │               │  │       DriverAssignment?$filter=...    │ │
+│  │               │  │                                      │ │
+│  │               │  │ get_live_location(assignmentId)       │ │
+│  │               │  │   GET /odata/v4/tracking/             │ │
+│  │               │  │       latestGps(assignmentId=...)     │ │
+│  │               │  │                                      │ │
+│  │               │  │ close_trip(assignmentId)              │ │
+│  │               │  │   POST /odata/v4/tracking/            │ │
+│  │               │  │       confirmDelivery                 │ │
+│  │               │  │                                      │ │
+│  │               │  │ get_directions()                      │ │
+│  │               │  │   GET /odata/v4/gmaps/                │ │
+│  │               │  │       RouteDirections?$expand=steps   │ │
+│  └──────────────┘  └──────────────────────────────────────┘ │
+└──────────────────────────┬───────────────────────────────────┘
+                           │ HTTP (Basic Auth / OAuth)
+                           ▼
+┌──────────────────────────────────────────────────────────────┐
+│  CAP Backend (existing, no changes needed)                    │
+│  EwmService + GmapsService + TrackingService                  │
+│  SQLite (dev) / HANA (prod)                                   │
+└──────────────────────────────────────────────────────────────┘
+```
+
+### Prerequisites
+
+| Requirement | Purpose | Cost |
+|-------------|---------|------|
+| **Azure subscription** | Host Azure Bot Service + Bot registration | Free tier (standard channels = $0) |
+| **Azure Bot Service** | Required by Microsoft for all Teams bots | Free for Teams channel |
+| **M365 Developer Program** | Own Teams tenant with admin rights for testing | Free (25 E5 licenses, 90 days renewable) |
+| **Teams admin approval** | Install custom bot in corporate Teams | Required for SAP corporate tenant; not needed in dev tenant |
+| **Python 3.11+** | LangGraph agent runtime | Already installed |
+| **LangGraph + langchain** | Agent framework with tool calling | pip install (free) |
+| **Claude API or OpenAI API** | LLM for natural language understanding | API key + usage-based pricing |
+
+**Sign up links:**
+- M365 Developer Program: https://developer.microsoft.com/en-us/microsoft-365/dev-program
+- Azure free account: https://azure.microsoft.com/free/
+
+### LangGraph Tools Specification
+
+```python
+# Tool definitions — each wraps an existing CAP OData endpoint
+
+@tool
+def list_open_deliveries(status_filter: str = None) -> str:
+    """List outbound deliveries. Optional filter by goods movement status."""
+    # GET /odata/v4/ewm/OutboundDeliveries?$top=20
+    # Returns: table of delivery doc, route, ship-to, status, date
+
+@tool  
+def get_delivery_details(delivery_doc: str) -> str:
+    """Get full details for a specific delivery document."""
+    # GET /odata/v4/ewm/OutboundDeliveries('{delivery_doc}')
+    # Returns: all fields including driver info, distance, duration
+
+@tool
+def get_delivery_route(delivery_doc: str) -> str:
+    """Fetch Google Maps route for a delivery (origin/destination from BP addresses)."""
+    # POST /odata/v4/ewm/getDeliveryRoute {deliveryDoc: delivery_doc}
+    # Returns: distance, duration, origin, destination, steps
+
+@tool
+def assign_driver(delivery_doc: str, mobile_number: str, truck_registration: str = None) -> str:
+    """Assign a driver to a delivery. Mobile number is mandatory. Returns QR code URL."""
+    # POST /odata/v4/tracking/assignDriver
+    # Returns: assignment ID, QR code URL, status
+
+@tool
+def get_driver_status(delivery_doc: str) -> str:
+    """Get active driver assignment for a delivery (truck, mobile, status, ETA)."""
+    # GET /odata/v4/tracking/DriverAssignment?$filter=DeliveryDocument eq '{doc}' and Status ne 'DELIVERED'
+    # Returns: truck, mobile, status, est distance/duration
+
+@tool
+def get_live_location(assignment_id: str) -> str:
+    """Get the latest GPS coordinates for a driver assignment."""
+    # GET /odata/v4/tracking/latestGps(assignmentId={id})
+    # Returns: lat, lng, speed, accuracy, recorded time, Google Maps link
+
+@tool
+def close_trip(assignment_id: str) -> str:
+    """Mark a delivery as completed. Stops GPS tracking and Kafka topic."""
+    # POST /odata/v4/tracking/confirmDelivery {assignmentId: id}
+    # Returns: success/failure
+
+@tool
+def get_directions() -> str:
+    """Get the latest stored route directions with turn-by-turn steps."""
+    # GET /odata/v4/gmaps/RouteDirections?$orderby=createdAt desc&$top=1&$expand=steps
+    # Returns: origin, destination, distance, duration, step-by-step directions
+```
+
+### Example Conversations
+
+**Listing deliveries:**
+```
+Dispatcher: Show me today's open deliveries
+Bot: Here are the open deliveries:
+     | Delivery  | Route  | Ship-To   | Status | Date       |
+     |-----------|--------|-----------|--------|------------|
+     | 80000000  | TR0002 | 17100001  | C      | 19 Aug 2016|
+     | 80000001  | TR0002 | 17100001  | C      | 09 Sep 2016|
+     ... (20 more)
+```
+
+**Assigning a driver:**
+```
+Dispatcher: Assign truck KA-01NA to delivery 80000005, driver mobile +91 98765 43210
+Bot: ✅ Driver assigned to delivery 80000005
+     Truck: KA-01NA | Mobile: +91 98765 43210
+     Status: ASSIGNED
+     Est. Distance: 881 mi | ETA: 13 hours 27 mins
+     QR Code: [link to tracking page]
+     
+     Driver should scan this QR code to start GPS tracking.
+```
+
+**Tracking:**
+```
+Dispatcher: Where is the truck for delivery 80000001?
+Bot: 🚚 Truck KA-01NA — Delivery 80000001
+     Status: IN_TRANSIT
+     Location: 12.9716°N, 77.5946°E (Bangalore)
+     Speed: 45 km/h
+     Last update: 2 minutes ago
+     [View on Google Maps]
+```
+
+**Closing:**
+```
+Dispatcher: Close delivery 80000001
+Bot: ✅ Delivery 80000001 marked as DELIVERED
+     Truck: KA-01NA | Driver: +91 98765 43210
+     Delivered at: 16 Apr 2026, 18:45
+     Last location: 12.97°N, 77.59°E [View on Maps]
+```
+
+### Implementation Steps
+
+1. **Set up M365 Developer Program** — get own Teams tenant with admin rights
+2. **Create Azure Bot Service** — register bot, get App ID + secret
+3. **Scaffold Python project** — `bot/` directory in this repo
+   ```
+   bot/
+   ├── app.py              # FastAPI server
+   ├── agent.py            # LangGraph agent with tools
+   ├── tools/
+   │   ├── ewm.py          # list_deliveries, get_details, get_route
+   │   ├── tracking.py     # assign_driver, get_status, get_location, close_trip
+   │   └── gmaps.py        # get_directions
+   ├── teams_adapter.py    # Azure Bot Framework → LangGraph bridge
+   ├── requirements.txt    # langchain, langgraph, botbuilder-core, fastapi
+   └── .env                # AZURE_BOT_APP_ID, AZURE_BOT_APP_SECRET, CAP_BASE_URL
+   ```
+4. **Implement LangGraph agent** — tools call CAP OData, Claude/GPT reasons
+5. **Test locally** — CLI interface first (no Teams)
+6. **Connect to Teams** — Azure Bot Framework SDK, register messaging endpoint
+7. **Deploy** — Azure Functions (Python) or BTP Kyma
+
+### Auth Strategy
+
+| Environment | CAP Auth | Bot → CAP |
+|------------|---------|-----------|
+| Local dev | Basic auth (alice:alice) | Same Basic auth in tool HTTP calls |
+| Production | XSUAA (OAuth2) | Client credentials flow: Bot gets token from XSUAA, passes as Bearer |
+
+### Tech Stack
+
+| Component | Technology | Version |
+|-----------|-----------|---------|
+| Bot runtime | Python | 3.11+ |
+| Agent framework | LangGraph | latest |
+| LLM | Claude (Anthropic) or GPT-4 (OpenAI) | latest |
+| Bot framework | botbuilder-python (Azure Bot SDK) | 4.x |
+| API server | FastAPI | 0.100+ |
+| Bot hosting | Azure Functions or BTP Kyma | — |
+| Bot registration | Azure Bot Service | Free tier |
+| Teams tenant (dev) | M365 Developer Program | Free |
+
+---
+
+## Production Deployment Checklist
+
+### CAP Backend (BTP)
+- [ ] `mbt build` → deploy to Cloud Foundry
+- [ ] HANA HDI container for persistence
+- [ ] XSUAA for authentication
+- [ ] BTP Destination Service for Google Maps API + EWM API
+- [ ] SAP Event Mesh (replaces Docker Kafka)
+
+### Teams Bot (Azure)
+- [ ] Azure Bot Service registration
+- [ ] Azure Functions for Python agent
+- [ ] Teams admin approval for bot installation
+- [ ] XSUAA client credentials for Bot → CAP auth
+- [ ] Anthropic/OpenAI API key for LLM
+
+### Monitoring
+- [ ] SAP Cloud Logging for CAP
+- [ ] Azure Application Insights for Bot
+- [ ] Kafka/Event Mesh monitoring
+- [ ] Teams webhook health checks
