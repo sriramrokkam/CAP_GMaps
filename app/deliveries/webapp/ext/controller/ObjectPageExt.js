@@ -1,15 +1,12 @@
 sap.ui.define([
-    "sap/fe/core/PageController",
     "sap/m/MessageToast"
-], function (PageController, MessageToast) {
+], function (MessageToast) {
     "use strict";
 
-    return PageController.extend("ewm.deliveries.ext.controller.ObjectPageExt", {
-
-        onAssignDriver: function (oEvent) {
-            const oCtx = this.getView().getBindingContext();
-            if (!oCtx) { MessageToast.show("No delivery selected"); return; }
-            const deliveryDoc = oCtx.getObject().DeliveryDocument;
+    return {
+        onAssignDriver: function (oBindingContext, aSelectedContexts) {
+            if (!oBindingContext) { MessageToast.show("No delivery selected"); return; }
+            var deliveryDoc = oBindingContext.getProperty("DeliveryDocument");
             if (!deliveryDoc) { MessageToast.show("No delivery document found"); return; }
 
             sap.ui.require(["ewm/deliveries/ext/fragment/DriverAssign"], function (DriverAssign) {
@@ -17,10 +14,9 @@ sap.ui.define([
             });
         },
 
-        onShowQR: function (oEvent) {
-            const oCtx = this.getView().getBindingContext();
-            if (!oCtx) { MessageToast.show("No delivery selected"); return; }
-            const deliveryDoc = oCtx.getObject().DeliveryDocument;
+        onShowQR: function (oBindingContext, aSelectedContexts) {
+            if (!oBindingContext) { MessageToast.show("No delivery selected"); return; }
+            var deliveryDoc = oBindingContext.getProperty("DeliveryDocument");
             if (!deliveryDoc) return;
 
             fetch("/odata/v4/tracking/getQRCode", {
@@ -29,8 +25,8 @@ sap.ui.define([
                     "Content-Type": "application/json",
                     "Authorization": "Basic " + btoa("alice:alice")
                 },
-                body: JSON.stringify({ deliveryDoc })
-            }).then(r => r.json()).then(data => {
+                body: JSON.stringify({ deliveryDoc: deliveryDoc })
+            }).then(function (r) { return r.json(); }).then(function (data) {
                 if (!data || !data.QRCodeImage) {
                     MessageToast.show("No active assignment found for this delivery.");
                     return;
@@ -38,9 +34,9 @@ sap.ui.define([
                 sap.ui.require(["ewm/deliveries/ext/fragment/DriverAssign"], function (DriverAssign) {
                     DriverAssign.openDialog(deliveryDoc, data.QRCodeImage);
                 });
-            }).catch(() => {
+            }).catch(function () {
                 MessageToast.show("Failed to retrieve QR code.");
             });
         }
-    });
+    };
 });
