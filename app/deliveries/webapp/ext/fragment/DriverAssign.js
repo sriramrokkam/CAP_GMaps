@@ -32,7 +32,7 @@ sap.ui.define([
                     var btnAssign = _byId("btnAssign");
                     if (assignForm) assignForm.setVisible(true);
                     if (qrSection) qrSection.setVisible(false);
-                    if (btnAssign) btnAssign.setVisible(true);
+                    if (btnAssign) { btnAssign.setVisible(true); btnAssign.setEnabled(true); }
                 }
                 oDialog.open();
             });
