@@ -109,13 +109,13 @@
                   "visible": true,
                   "actions": {
                     "assignDriverAction": {
-                      "press": "ewm.deliveries.ext.controller.ObjectPageExt.onAssignDriver",
+                      "press": "onAssignDriver",
                       "enabled": true,
                       "text": "Assign Driver",
                       "icon": "sap-icon://person-placeholder"
                     },
                     "showQRAction": {
-                      "press": "ewm.deliveries.ext.controller.ObjectPageExt.onShowQR",
+                      "press": "onShowQR",
                       "enabled": true,
                       "text": "Show QR",
                       "icon": "sap-icon://qr-code"

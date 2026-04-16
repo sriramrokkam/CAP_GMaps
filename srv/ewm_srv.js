@@ -83,6 +83,29 @@ module.exports = class EwmService extends cds.ApplicationService {
                 });
             }
 
+            // Enrich rows with latest active driver assignment data
+            const { DriverAssignment } = cds.entities('iot_schema');
+            if (rows.length > 0 && DriverAssignment) {
+                const docIds = rows.map(r => r.DeliveryDocument);
+                const assignments = await cds.run(
+                    SELECT.from(DriverAssignment)
+                        .where({ DeliveryDocument: { in: docIds }, Status: { '!=': 'DELIVERED' } })
+                        .columns('DeliveryDocument','MobileNumber','TruckRegistration','Status','EstimatedDistance','EstimatedDuration')
+                ).catch(() => []);
+                const assignMap = {};
+                for (const a of assignments) assignMap[a.DeliveryDocument] = a;
+                for (const row of rows) {
+                    const a = assignMap[row.DeliveryDocument];
+                    if (a) {
+                        row.DriverStatus      = a.Status;
+                        row.DriverMobile      = a.MobileNumber;
+                        row.DriverTruck       = a.TruckRegistration || null;
+                        row.EstimatedDistance = a.EstimatedDistance || null;
+                        row.EstimatedDuration = a.EstimatedDuration || null;
+                    }
+                }
+            }
+
             return rows;
         });
 

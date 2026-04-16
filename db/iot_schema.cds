@@ -20,6 +20,8 @@ entity DriverAssignment : managed {
         KafkaTopic        : String(100)   @title: 'Kafka Topic';        // 'gps-{DeliveryDocument}'
         QRCodeUrl         : String(500)   @title: 'QR Code URL';        // '/tracking/index.html#<ID>'
         QRCodeImage       : LargeString   @title: 'QR Code Image';      // base64 PNG data URL
+        EstimatedDistance : String(100)   @title: 'Est. Distance';      // e.g. "45 km"
+        EstimatedDuration : String(100)   @title: 'Est. Duration';      // e.g. "1 hr 12 min"
 }
 
 /**

@@ -42,7 +42,17 @@ module.exports = class TrackingService extends cds.ApplicationService {
                 const baseUrl  = process.env.APP_BASE_URL || 'http://localhost:4004';
                 const qrImage  = await QRCode.toDataURL(`${baseUrl}${qrUrl}`);
 
-                // 5. Build assignment object
+                // 5. Fetch estimated distance/duration from stored route (best-effort)
+                // Uses the most recent RouteDirections row — best proxy since routes are per delivery
+                let estDistance = null, estDuration = null;
+                try {
+                    const route = await db.run(
+                        SELECT.one.from('gmaps_schema_RouteDirections').columns('distance','duration').orderBy({ createdAt: 'desc' })
+                    );
+                    if (route) { estDistance = route.distance; estDuration = route.duration; }
+                } catch (_) { /* no route stored yet — leave null */ }
+
+                // 6. Build assignment object
                 const assignment = {
                     ID: id,
                     DeliveryDocument:  deliveryDoc,
@@ -52,10 +62,12 @@ module.exports = class TrackingService extends cds.ApplicationService {
                     Status:            'ASSIGNED',
                     KafkaTopic:        topic,
                     QRCodeUrl:         qrUrl,
-                    QRCodeImage:       qrImage
+                    QRCodeImage:       qrImage,
+                    EstimatedDistance: estDistance,
+                    EstimatedDuration: estDuration
                 };
 
-                // 6. Persist, create Kafka topic, notify Teams
+                // 7. Persist, create Kafka topic, notify Teams
                 await INSERT.into(DriverAssignment).entries(assignment);
                 await kafkaProducer.createTopic(topic);
                 await teamsNotify.post('ASSIGNED', assignment);

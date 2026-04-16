@@ -20,6 +20,12 @@ entity OutboundDeliveries : managed {
         HeaderBillgIncompletionStatus     : String(1)    @title: 'Billing Status';
         // Delivery date — stored as ISO string (EWM returns OData V2 /Date(ms)/ format)
         DeliveryDate                      : DateTime     @title: 'Delivery Date';
+        // Driver assignment fields — populated by JOIN in READ handler
+        DriverStatus                      : String(20)   @title: 'Driver Status';
+        DriverMobile                      : String(20)   @title: 'Driver Mobile';
+        DriverTruck                       : String(20)   @title: 'Truck';
+        EstimatedDistance                 : String(100)  @title: 'Est. Distance';
+        EstimatedDuration                 : String(100)  @title: 'Est. Duration';
 }
 
 /**
