@@ -6,6 +6,17 @@
     {
       "name": "$XSAPPNAME.gmaps_user",
       "description": "User can access and use the Google Maps application"
+    },
+    {
+      "name": "$XSAPPNAME.emcallback",
+      "description": "Enterprise-Messaging Callback Access",
+      "grant-as-authority-to-apps": [
+        "$XSSERVICENAME(gmaps-app-messaging)"
+      ]
+    },
+    {
+      "name": "$XSAPPNAME.emmanagement",
+      "description": "Enterprise-Messaging Management Access"
     }
   ],
   "role-templates": [
@@ -26,5 +37,9 @@
         "$XSAPPNAME.gmaps_user"
       ]
     }
+  ],
+  "authorities": [
+    "$XSAPPNAME.emmanagement",
+    "$XSAPPNAME.mtcallback"
   ]
 }

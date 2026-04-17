@@ -10,6 +10,7 @@ modules:
       - name: gmaps-app-destination
       - name: gmaps-app-db
       - name: gmaps-app-uaa
+      - name: gmaps-app-messaging
     provides:
       - name: srv-api
         properties:
@@ -40,9 +41,24 @@ modules:
             - routesroutes.zip
           name: routesroutes
           target-path: resources/
+        - artifacts:
+            - ewmdeliveries.zip
+          name: ewmdeliveries
+          target-path: resources/
   - name: routesroutes
     type: html5
     path: app/routes
+    build-parameters:
+      build-result: dist
+      builder: custom
+      commands:
+        - npm install
+        - npm run build:cf
+      supported-platforms:
+        []
+  - name: ewmdeliveries
+    type: html5
+    path: app/deliveries
     build-parameters:
       build-result: dist
       builder: custom
@@ -68,7 +84,13 @@ modules:
       memory: 256M
       keep-existing-routes: true
     build-parameters:
-      ignore: ["node_modules/"]
+      ignore:
+        - "node_modules/"
+    provides:
+      - name: app-api
+        properties:
+          app-protocol: ${protocol}
+          app-uri: ${default-uri}
 resources:
   - name: gmaps-app-db
     type: com.sap.xs.hdi-container
@@ -89,6 +111,12 @@ resources:
           credential-types:
             - "binding-secret"
             - "x509"
+          redirect-uris:
+            - https://*~{app-api/app-uri}/**
+    requires:
+      - name: app-api
+    processed-after:
+      - gmaps-app-messaging
   - name: gmaps-app-destination
     type: org.cloudfoundry.managed-service
     parameters:
@@ -121,6 +149,12 @@ resources:
       service: html5-apps-repo
       service-name: gmaps-app-html5-service
       service-plan: app-host
+  - name: gmaps-app-messaging
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: enterprise-messaging
+      service-plan: default
+      path: ./event-mesh.json
 parameters:
   deploy_mode: html5-repo
   enable-parallel-deployments: true

@@ -96,7 +96,10 @@
           "kind": "xsuaa"
         }
       },
-      "destinations": true
+      "destinations": true,
+      "messaging": {
+        "kind": "enterprise-messaging"
+      }
     }
   },
   "sapux": [
