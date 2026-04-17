@@ -265,7 +265,7 @@ APP_BASE_URL=http://localhost:4004  # Base URL for QR codes
 
 ## Project Status & Completed Features
 
-### Branch: `feature2_gmap_iot`
+### Branch: `main` (merged from `feature2_gmap_iot` on 17 Apr 2026)
 
 | Feature | Status | Notes |
 |---------|--------|-------|
@@ -283,6 +283,9 @@ APP_BASE_URL=http://localhost:4004  # Base URL for QR codes
 | Teams Notifications | Done | Rich MessageCards for ASSIGNED/LOCATION/DELIVERED |
 | Driver Status in List Report | Done | DriverStatus, Truck, Mobile, Est. Distance/Duration columns |
 | Confirm Delivery (mobile + backend) | Done | Both driver (mobile page) and dispatcher (Close Trip button) |
+| CF Deployment Config (mta.yaml) | Done | All 6 modules, 5 BTP resources, 2 HTML5 apps |
+| SAP Event Mesh Config | Done | event-mesh.json, xs-security.json authorities, CDS messaging |
+| Approuter Multi-Service Routing | Done | EWM + GMaps (xsuaa) + Tracking (unauthenticated) routes |
 
 ---
 
@@ -592,16 +595,139 @@ export AICORE_API_BASE=https://api.ai.xxx.aws.ml.hana.ondemand.com
 
 ---
 
+## BTP Cloud Foundry Deployment
+
+### MTA Modules
+
+| Module | Type | Path | Purpose |
+|--------|------|------|---------|
+| `gmaps-app-srv` | nodejs | gen/srv | CAP backend (all 3 OData services) |
+| `gmaps-app-db-deployer` | hdb | gen/db | HANA HDI schema deployment |
+| `routesroutes` | html5 | app/routes | Route Directions Fiori app |
+| `ewmdeliveries` | html5 | app/deliveries | EWM Deliveries Fiori app |
+| `gmaps-app-approuter` | approuter.nodejs | app/router | Request routing + auth |
+| `gmaps-app-app-content` | content | . | HTML5 repo content delivery |
+
+### BTP Resources
+
+| Resource | Service | Plan | Purpose |
+|----------|---------|------|---------|
+| `gmaps-app-db` | hana | hdi-shared | HANA HDI container |
+| `gmaps-app-uaa` | xsuaa | application | Authentication + authorization |
+| `gmaps-app-destination` | destination | lite | External API routing (Google Maps, EWM, BP) |
+| `gmaps-app-repo-host` | html5-apps-repo | app-host | Fiori app hosting |
+| `gmaps-app-messaging` | enterprise-messaging | default | Event streaming (replaces Kafka in prod) |
+
+### BTP Destinations to Configure
+
+| Name | URL | Auth | Properties |
+|------|-----|------|-----------|
+| `GoogleAPI-SR` | `https://maps.googleapis.com` | NoAuthentication | `URL.queries.key` = your API key |
+| `EWM-API` | SAP EWM system URL | OAuth2/Basic | EWM Outbound Delivery API |
+| `BP-API` | SAP S/4HANA URL | OAuth2/Basic | Business Partner API |
+
+### Build & Deploy Commands
+
+```bash
+# Build MTA archive (includes CDS build + UI5 build for both apps)
+npm run build
+
+# Deploy to Cloud Foundry (us10)
+cf api https://api.cf.us10.hana.ondemand.com
+cf login --sso
+npm run deploy
+
+# Verify deployment
+cf apps
+cf services
+cf logs gmaps-app-srv --recent
+
+# Undeploy everything
+npm run undeploy
+```
+
+### Approuter Routing (xs-app.json)
+
+```
+/odata/v4/gmaps/*    → srv-api (xsuaa auth)
+/odata/v4/ewm/*      → srv-api (xsuaa auth)
+/odata/v4/tracking/* → srv-api (no auth — driver mobile access)
+/tracking/*          → srv-api (no auth — static tracking page)
+/*                   → local static files
+```
+
+The TrackingService actions (`updateLocation`, `confirmDelivery`, `latestGps`) use `@requires: 'any'` because the driver's mobile browser has no SAP login — the 128-bit UUID assignment ID acts as the shared secret.
+
+---
+
+## SAP Event Mesh (Production Kafka Replacement)
+
+### Configuration
+
+`event-mesh.json`:
+```json
+{
+  "emname": "gmaps-app-emname",
+  "namespace": "default/gmaps-app/1",
+  "options": { "management": true, "messagingrest": true, "messaging": true },
+  "rules": {
+    "topicRules": {
+      "publishFilter": ["${namespace}/*"],
+      "subscribeFilter": ["*"]
+    }
+  }
+}
+```
+
+### xs-security.json additions
+
+```json
+{
+  "scopes": [
+    { "name": "$XSAPPNAME.emcallback", "grant-as-authority-to-apps": ["$XSSERVICENAME(gmaps-app-messaging)"] },
+    { "name": "$XSAPPNAME.emmanagement" }
+  ],
+  "authorities": ["$XSAPPNAME.emmanagement", "$XSAPPNAME.mtcallback"]
+}
+```
+
+### package.json CDS config
+
+```json
+"messaging": { "kind": "enterprise-messaging" }
+```
+
+CAP automatically binds to Event Mesh in production via the `gmaps-app-messaging` service binding. The existing `kafkajs`-based producer/consumer works alongside — in production, CAP's built-in messaging layer handles event dispatch while the custom Kafka code gracefully fails (fire-and-forget pattern with `.catch()`).
+
+### Migration Path: Kafka → Event Mesh
+
+| Aspect | Docker Kafka (dev) | Event Mesh (prod) |
+|--------|-------------------|-------------------|
+| Broker | `localhost:9092` | BTP service binding (automatic) |
+| Topic naming | `gps-{deliveryDoc}` | `default/gmaps-app/1/gps-{deliveryDoc}` |
+| Producer | KafkaJS `producer.send()` | CAP `cds.messaging.emit()` or REST API |
+| Consumer | KafkaJS `consumer.run()` | CAP event handler `cds.on('message', ...)` or webhook |
+| Management | Auto-create via admin API | Event Mesh dashboard or REST API |
+
+---
+
 ## Production Deployment Checklist
 
 ### CAP Backend (BTP Cloud Foundry)
-- [ ] `mbt build` → deploy to Cloud Foundry
-- [ ] HANA HDI container for persistence
-- [ ] XSUAA for authentication
-- [ ] BTP Destination Service for Google Maps API + EWM API
-- [ ] SAP Event Mesh (replaces Docker Kafka)
+- [x] MTA descriptor with all modules (srv, db, 2 HTML5 apps, approuter, content)
+- [x] `mbt build` → generates `mta_archives/archive.mtar`
+- [x] HANA HDI container configured
+- [x] XSUAA with gmaps_user scope + Enterprise Messaging authorities
+- [x] Destination service (Google Maps, EWM, BP destinations)
+- [x] HTML5 repo for both Fiori apps (routes + deliveries)
+- [x] Enterprise Messaging / Event Mesh configured
+- [x] Approuter routes for all 3 OData services + tracking page
+- [ ] Create BTP destinations (GoogleAPI-SR, EWM-API, BP-API) in cockpit
+- [ ] Deploy: `npm run deploy`
+- [ ] Assign GmapsUser role collection to users
+- [ ] Verify all services running: `cf apps`
 
-### Teams Bot (SAP AI Core + Azure)
+### Teams Bot (SAP AI Core + Azure) — Phase 3
 - [ ] SAP AI Core service instance + Generative AI Hub enabled
 - [ ] Docker image built and pushed to AI Core registry
 - [ ] AI Core serving configuration deployed
@@ -612,6 +738,6 @@ export AICORE_API_BASE=https://api.ai.xxx.aws.ml.hana.ondemand.com
 ### Monitoring
 - [ ] SAP Cloud Logging for CAP
 - [ ] SAP AI Core metrics/logs for bot agent
-- [ ] Kafka/Event Mesh monitoring
+- [ ] Event Mesh monitoring dashboard
 - [ ] Teams webhook health checks
 - [ ] Azure Bot Service analytics

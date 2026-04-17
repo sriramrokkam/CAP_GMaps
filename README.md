@@ -1,317 +1,222 @@
-# CAP Google Maps Integration Project
-
-## 📋 Table of Contents
-
-1. [Overview](#overview)
-2. [Features](#features)
-3. [Prerequisites](#prerequisites)
-4. [Getting Started](#getting-started)
-5. [Project Structure](#project-structure)
-6. [How-To Guides](#how-to-guides)
-7. [Configuration](#configuration)
-8. [Development Workflow](#development-workflow)
-9. [Deployment](#deployment)
-10. [Troubleshooting](#troubleshooting)
-11. [API Reference](#api-reference)
-12. [Additional Documentation](#additional-documentation)
-
----
+# CAP Google Maps + EWM IoT Driver Tracking
 
 ## Overview
 
-This **SAP Cloud Application Programming Model (CAP)** project demonstrates enterprise-grade integration of **Google Maps JavaScript API** within a **Fiori Elements** application. It visualizes route directions and navigation steps with interactive maps, automatic loading, and robust error handling.
+SAP Cloud Application Programming Model (CAP) project integrating **Google Maps**, **SAP EWM Outbound Deliveries**, and **real-time IoT driver tracking** into Fiori Elements applications. Dispatchers manage deliveries, assign drivers, and track GPS live on a map — with Kafka event streaming and MS Teams notifications.
 
-### Business Use Case
+### Business Scenario
 
-- Display route planning data from Google Maps Directions API
-- Visualize individual navigation steps on interactive maps
-- Provide turn-by-turn route guidance in an enterprise application
-
-### Technical Highlights
-
-- ✅ **SAP CAP Framework** - Cloud-native application development
-- ✅ **Fiori Elements V4** - Standard UI patterns with custom extensions
-- ✅ **OData V4** - RESTful API with full CRUD support
-- ✅ **Google Maps API** - Professional map visualization
-- ✅ **Automatic Loading** - Zero-click map rendering with retry logic
-- ✅ **Production Ready** - Deployable to SAP BTP
+1. Dispatcher views outbound deliveries from SAP EWM
+2. Clicks "View on Map" to see the Google Maps route (origin/destination resolved from Business Partner addresses)
+3. Assigns a driver (mobile + truck) — QR code generated
+4. Driver scans QR on mobile phone — GPS tracking starts automatically via browser Geolocation API
+5. Truck marker appears live on the Fiori map (30s polling)
+6. Teams channel receives rich notifications: assignment, location updates, delivery confirmation
+7. Driver confirms delivery on mobile — tracking stops, Kafka topic cleaned up
 
 ---
 
 ## Features
 
-### Core Features
+| Feature | Description |
+|---------|-------------|
+| **EWM Delivery List** | Proxied from SAP EWM sandbox API, cached in local SQLite/HANA |
+| **Google Maps Routes** | Directions API called from CAP, polyline + markers rendered in Fiori custom section |
+| **Turn-by-Turn Directions** | Step-by-step navigation stored as RouteSteps, shown in IconTabBar |
+| **Driver Assignment** | Header action dialog with QR code generation (qrcode npm, pure Node.js) |
+| **Mobile Tracking Page** | UI5 ObjectPageLayout (sap.uxap) — GPS + Simulate GPS + Confirm Delivery |
+| **Live Truck Marker** | Polls latestGps every 30s, renders moving marker on Google Maps |
+| **Kafka Event Stream** | Per-delivery topic (`gps-{doc}`), KRaft Docker (no ZooKeeper) |
+| **MS Teams Notifications** | Rich MessageCards for ASSIGNED, LOCATION, DELIVERED events |
+| **Close Trip** | Dispatcher or driver can mark delivery complete, reassign drivers |
+| **SAP Event Mesh** | Enterprise messaging configured for production (replaces Docker Kafka) |
 
-- ✅ **Automatic Map Loading** - Map renders automatically when RouteStep is opened
-- ✅ **Interactive Markers** - Start (green marker "A") and end (red marker "B") points
-- ✅ **Route Visualization** - Blue polyline connecting route steps
-- ✅ **Info Windows** - Click markers to see step details
-- ✅ **Auto-fit Bounds** - Map automatically zooms to show entire route
+---
 
-### UX Features
+## Architecture
 
-- ✅ **Retry Mechanism** - Polls up to 10 times (3 seconds) for data availability
-- ✅ **Manual Refresh** - Backup refresh button for user control
-- ✅ **Error Messages** - Clear, actionable feedback for failures
-- ✅ **Loading States** - Visual feedback during map initialization
+```
+Fiori Elements (UI5 1.144, sap_horizon)
+  List Report → Object Page → Custom Sections (Map, Directions, Driver Assign)
+       |
+       | OData V4
+       v
+CAP Node.js Services
+  EwmService      — READ proxy to SAP EWM + BP APIs, getDeliveryRoute, getDeliveryItems
+  GmapsService    — getDirections, Routes/RouteDirections/RouteSteps CRUD
+  TrackingService — assignDriver, updateLocation, confirmDelivery, latestGps
+       |                    |                    |
+  SAP Sandbox        Google Maps API        Kafka (KRaft) / Event Mesh
+  (EWM + BP)         Directions API         MS Teams Webhook
+                                            Mobile Browser (GPS)
+```
 
-### Technical Features
+### Data Model
 
-- ✅ **Lazy Loading** - Google Maps script loaded only when needed
-- ✅ **Script Caching** - Prevents duplicate API loads
-- ✅ **Responsive Design** - Works on desktop and tablet devices
-- ✅ **OData Integration** - Full entity relationships with compositions
+```
+gmaps_schema:
+  Routes ←── RouteDirections ──→ RouteSteps
+  OutboundDeliveries ──→ DeliveryItems
+
+iot_schema:
+  DriverAssignment ──→ GpsCoordinates
+```
 
 ---
 
 ## Prerequisites
 
-### Required Software
+| Software | Version | Purpose |
+|----------|---------|---------|
+| Node.js | 18.x / 20.x | Runtime |
+| @sap/cds-dk | 9.x | CAP development tools |
+| Docker | Latest | Kafka (local dev) |
+| CF CLI | Latest | Cloud Foundry deployment |
+| MBT | 1.2+ | MTA build tool |
 
-| Software | Version | Purpose | Installation |
-|----------|---------|---------|--------------|
-| **Node.js** | 18.x or 20.x | Runtime environment | https://nodejs.org/ |
-| **@sap/cds-dk** | Latest | CAP development tools | `npm i -g @sap/cds-dk` |
-| **Git** | Latest | Version control | https://git-scm.com/ |
-| **VS Code** | Latest | IDE (recommended) | https://code.visualstudio.com/ |
+### API Keys & Services
 
-### Google Maps API Key
-
-You need a Google Maps API key with **Maps JavaScript API** enabled.
-
-Get your key at: https://console.cloud.google.com/apis/credentials
+| Key | Where | Purpose |
+|-----|-------|---------|
+| `GOOGLE_MAPS_API_KEY` | `.env` | Google Maps Directions + JavaScript API |
+| `SAP_SANDBOX_API_KEY` | `.env` | SAP API Business Hub sandbox (EWM + BP) |
+| `KAFKA_BROKER` | `.env` | Kafka broker address (default: `localhost:9092`) |
+| `TEAMS_WEBHOOK_URL` | `.env` | MS Teams Incoming Webhook URL |
+| `APP_BASE_URL` | `.env` | Base URL for QR codes (default: `http://localhost:4004`) |
 
 ---
 
 ## Getting Started
 
-### Step 1: Install Dependencies
+### 1. Install and run
 
 ```bash
-# Navigate to project
-cd 04_CAP_GMaps
-
-# Install dependencies
 npm install
-
-# Verify CDS installation
-cds version
-```
-
-### Step 2: Deploy the Database
-
-```bash
-# Initialize SQLite database
 cds deploy --to sqlite
-```
-
-### Step 3: Start the Development Server
-
-```bash
-# Start with auto-reload
 cds watch
 ```
 
-Server starts at: **http://localhost:4004**
+Server starts at **http://localhost:4004**
 
-### Step 4: Test the Application
+### 2. Start Kafka (optional, for GPS event streaming)
 
-1. Open: http://localhost:4004/routes.routes/webapp/index.html
-2. Click **RouteDirections** → Select a route → Click a **RouteStep**
-3. **Map loads automatically** with markers and route line!
+```bash
+docker compose up -d
+```
 
-**Expected Result:**
+### 3. Open the apps
 
-- Green marker (A) at start location
-- Red marker (B) at end location
-- Blue line connecting the points
+| App | URL |
+|-----|-----|
+| Routes (Google Maps) | http://localhost:4004/routes.routes/webapp/index.html |
+| Deliveries (EWM + IoT) | http://localhost:4004/ewm.deliveries/webapp/index.html |
+| Driver Tracking (Mobile) | http://localhost:4004/tracking/index.html#{assignmentId} |
+| OData EWM Service | http://localhost:4004/odata/v4/ewm/ |
+| OData Tracking Service | http://localhost:4004/odata/v4/tracking/ |
+| OData Maps Service | http://localhost:4004/odata/v4/gmaps/ |
 
 ---
 
 ## Project Structure
 
-```text
-04_CAP_GMaps/
-│
-├── 📁 app/                              # UI Layer
-│   ├── services.cds                     # UI service exposure
-│   └── routes/
-│       ├── annotations.cds              # Fiori annotations
-│       └── webapp/
-│           └── ext/fragment/
-│               ├── DisplayGmap.fragment.xml   # Map UI
-│               └── DisplayGmap.js             # Map logic ⭐
-│
-├── 📁 db/                               # Data Layer
-│   └── gmaps_schema.cds                 # Entity definitions
-│
-├── 📁 srv/                              # Service Layer
-│   ├── gmap_srv.cds                     # OData service definition
-│   └── gmap_srv.js                      # Business logic handlers
-│
-├── 📄 package.json                      # Dependencies & scripts
-├── 📄 mta.yaml                          # BTP deployment descriptor
-├── 📄 README.md                         # This file
-└── 📄 DETAILED_DESIGN_DOCUMENT.md       # Technical architecture ⭐
+```
+922_CAP_GMaps/
+├── app/
+│   ├── deliveries/              # Fiori Elements — EWM Deliveries + Driver Tracking
+│   │   ├── annotations.cds
+│   │   ├── webapp/
+│   │   │   ├── ext/controller/ObjectPageExt.js    # Header actions (Assign, QR, Close Trip)
+│   │   │   ├── ext/fragment/DeliveryMap.js         # Google Maps + truck marker polling
+│   │   │   ├── ext/fragment/DriverAssign.js        # Assignment dialog + QR display
+│   │   │   └── manifest.json
+│   │   ├── ui5-deploy.yaml      # CF build config
+│   │   └── xs-app.json          # HTML5 repo routing
+│   ├── routes/                  # Fiori Elements — Route Directions
+│   │   └── webapp/ext/fragment/DisplayGmap.js
+│   ├── tracking/                # Mobile tracking page (UI5 ObjectPageLayout)
+│   │   └── index.html
+│   ├── router/                  # Approuter
+│   │   └── xs-app.json
+│   └── services.cds
+├── db/
+│   ├── gmaps_schema.cds         # Routes, RouteDirections, RouteSteps, OutboundDeliveries
+│   └── iot_schema.cds           # DriverAssignment, GpsCoordinates
+├── srv/
+│   ├── ewm_srv.cds / .js       # EWM service (proxied READ, getDeliveryRoute, getDeliveryItems)
+│   ├── gmap_srv.cds / .js       # Google Maps service (getDirections)
+│   ├── tracking_srv.cds / .js   # IoT tracking (assignDriver, updateLocation, confirmDelivery)
+│   ├── kafka_producer.js        # KafkaJS producer (createTopic, publish, deleteTopic)
+│   ├── kafka_consumer.js        # KafkaJS consumer (GPS ingestion, 5-min Teams timer)
+│   └── teams_notify.js          # MS Teams webhook (rich MessageCard format)
+├── docs/
+│   └── cap-iot-tracking-patterns.md  # Architecture & patterns reference
+├── mta.yaml                     # BTP Cloud Foundry deployment descriptor
+├── xs-security.json             # XSUAA scopes + Enterprise Messaging authorities
+├── event-mesh.json              # SAP Event Mesh configuration
+├── docker-compose.yml           # Kafka KRaft (local dev)
+├── package.json                 # CDS config, scripts, dependencies
+└── CLAUDE.md                    # AI assistant project guidelines
 ```
 
 ---
 
-## How-To Guides
+## OData Services
 
-### Add Sample Data
+### EwmService (`/odata/v4/ewm/`)
 
-Create `db/data/gmaps.db-RouteDirections.csv`:
+| Endpoint | Type | Description |
+|----------|------|-------------|
+| `OutboundDeliveries` | Entity | EWM deliveries (proxied from SAP sandbox, cached locally) |
+| `DeliveryItems` | Entity | Line items per delivery |
+| `RouteDirections` | Entity | Google Maps route data |
+| `DriverAssignments` | Entity | Active driver assignments |
+| `getDeliveryRoute(deliveryDoc)` | Action | Fetch Google Maps route for a delivery |
+| `getDeliveryItems(deliveryDoc)` | Action | Fetch line items from EWM |
 
-```csv
-route_ID;origin;destination;distance;duration;bounds_northeast_lat;bounds_northeast_lng;bounds_southwest_lat;bounds_southwest_lng
-e4d2a904-a2a5-4222-b022-bdb93bf4f7d3;New York, NY;Boston, MA;346 km;3 hours;42.3601;-71.0589;40.7128;-74.0060
-```
+### TrackingService (`/odata/v4/tracking/`)
 
-Create `db/data/gmaps.db-RouteSteps.csv`:
+| Endpoint | Type | Auth | Description |
+|----------|------|------|-------------|
+| `DriverAssignment` | Entity | Authenticated | Assignment records |
+| `GpsCoordinates` | Entity | Authenticated | GPS ping history |
+| `assignDriver(...)` | Action | gmaps_user | Create assignment + QR code |
+| `getQRCode(deliveryDoc)` | Action | gmaps_user | Retrieve active assignment QR |
+| `updateLocation(...)` | Action | Any (UUID secret) | Driver pushes GPS ping |
+| `confirmDelivery(assignmentId)` | Action | Any (UUID secret) | Mark delivery complete |
+| `latestGps(assignmentId)` | Function | Any (UUID secret) | Latest GPS position |
 
-```csv
-ID;route_ID;stepNumber;instruction;distance;duration;startLat;startLng;endLat;endLng;travelMode;maneuver
-a1b2c3d4;e4d2a904-a2a5-4222-b022-bdb93bf4f7d3;1;Head north;0.2 km;1 min;40.7128;-74.0060;40.7150;-74.0060;DRIVING;straight
-```
+### GmapsService (`/odata/v4/gmaps/`)
 
-Deploy:
-
-```bash
-cds deploy --to sqlite
-```
-
-### Customize the Map
-
-Edit `app/routes/webapp/ext/fragment/DisplayGmap.js`:
-
-**Change marker color** (line ~295):
-
-```javascript
-const startMarker = new google.maps.Marker({
-    icon: {
-        url: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png"
-    }
-});
-```
-
-**Change polyline color** (line ~320):
-
-```javascript
-const pathLine = new google.maps.Polyline({
-    strokeColor: "#FF0000",  // Red line
-    strokeWeight: 6          // Thicker
-});
-```
-
-### Test OData Endpoints
-
-```bash
-# Get all routes
-curl http://localhost:4004/odata/v4/gmaps/RouteDirections
-
-# Get route with steps
-curl "http://localhost:4004/odata/v4/gmaps/RouteDirections(e4d2a904-a2a5-4222-b022-bdb93bf4f7d3)?\$expand=steps"
-
-# Filter steps
-curl "http://localhost:4004/odata/v4/gmaps/RouteSteps?\$filter=stepNumber eq 1"
-```
+| Endpoint | Type | Description |
+|----------|------|-------------|
+| `Routes` | Entity | Route master data |
+| `RouteDirections` | Entity | Directions with bounds, polyline, rawData |
+| `RouteSteps` | Entity | Turn-by-turn steps |
+| `getDirections(from, to)` | Action | Call Google Maps API, persist results |
 
 ---
 
-## Configuration
+## Deployment (BTP Cloud Foundry)
 
-### Google Maps API Key
+### BTP Services Required
 
-**Current setup (Development):**
+| Service | Plan | MTA Resource Name | Purpose |
+|---------|------|-------------------|---------|
+| HANA | hdi-shared | gmaps-app-db | Database |
+| XSUAA | application | gmaps-app-uaa | Authentication |
+| Destination | lite | gmaps-app-destination | External API routing |
+| HTML5 Repo | app-host | gmaps-app-repo-host | Fiori app hosting |
+| Enterprise Messaging | default | gmaps-app-messaging | Event streaming (prod Kafka) |
 
-Hardcoded in `DisplayGmap.js`:
+### BTP Destinations to Configure
 
-```javascript
-const apiKey = "AIzaSyBnJ6XNmu3vQE6Uay9BX7q1HV-Qz_N5eP4";
-```
+| Destination Name | URL | Purpose |
+|-----------------|-----|---------|
+| `GoogleAPI-SR` | `https://maps.googleapis.com` | Google Maps API (add API key as URL.queries.key) |
+| `EWM-API` | SAP EWM system URL | EWM Outbound Deliveries |
+| `BP-API` | SAP S/4HANA URL | Business Partner addresses |
 
-⚠️ **Replace with your own key for production!**
-
-### Database
-
-Edit `package.json`:
-
-```json
-{
-  "cds": {
-    "requires": {
-      "db": { "kind": "sqlite" },
-      "[production]": { "db": { "kind": "hana" } }
-    }
-  }
-}
-```
-
----
-
-## Development Workflow
-
-### Daily Commands
-
-```bash
-# Start dev server
-cds watch
-
-# Deploy database changes
-cds deploy --to sqlite
-
-# Build for production
-cds build --production
-
-# Run tests
-npm test
-```
-
-### Debugging
-
-**Enable logs:**
-
-```bash
-export DEBUG=*
-cds watch
-```
-
-**Check browser console:**
-
-- Open DevTools (F12)
-- Look for messages starting with `===`
-
----
-
-## Deployment
-
-### BTP Destination Service Setup
-
-Your app uses **SAP BTP Destination service** to securely store the Google Maps API key in production.
-
-#### 1. Create Destination in BTP Cockpit
-
-Navigate to: **BTP Cockpit → Subaccount → Connectivity → Destinations → New Destination**
-
-| Field | Value |
-|-------|-------|
-| Name | `GoogleAPI-SR` |
-| Type | `HTTP` |
-| URL | `https://maps.googleapis.com` |
-| Proxy Type | `Internet` |
-| Authentication | `NoAuthentication` |
-
-**Additional Properties** (click "New Property"):
-
-| Property | Value |
-|----------|-------|
-| `URL.queries.key` | Your Google Maps API Key |
-| `WebIDEEnabled` | `true` |
-
-**Important:** The API key is stored in the destination, not in your code. This allows you to rotate keys without redeploying.
-
-#### 2. Build and Deploy
+### Build and Deploy
 
 ```bash
 # Build MTA archive
@@ -320,191 +225,73 @@ npm run build
 # Deploy to Cloud Foundry
 npm run deploy
 
-# Or manually:
-cf deploy mta_archives/archive.mtar
-```
-
-#### 3. Verify Deployment
-
-```bash
-# Check service bindings
+# Verify
+cf apps
 cf services
-
-# View app logs
 cf logs gmaps-app-srv --recent
-
-# Test endpoint
-cf apps  # Get app URL
 ```
 
-#### How It Works
-
-**Local Development:**
-- Uses direct URL: `https://maps.googleapis.com`
-- API key from environment variable or hardcoded fallback
-
-**Production (Cloud Foundry):**
-- Uses destination: `GoogleAPI-SR`
-- API key automatically injected from destination properties
-- No code changes needed - CAP switches automatically via `[production]` profile
-
-**Configuration in package.json:**
-
-```json
-"cds": {
-  "requires": {
-    "GoogleAPI-SR": {
-      "kind": "rest",
-      "credentials": { "url": "https://maps.googleapis.com" }
-    },
-    "[production]": {
-      "GoogleAPI-SR": {
-        "kind": "rest",
-        "credentials": { "destination": "GoogleAPI-SR" }
-      }
-    }
-  }
-}
-```
-
-**Key Points:**
-- ✅ Same service name (`GoogleAPI-SR`) in both environments
-- ✅ Production automatically uses BTP Destination service
-- ✅ API key stored securely in BTP Cockpit
-- ✅ Update destination without redeploying app (just restart)
-
-**Best Practices:**
-```json
-"GoogleAPI-SR": {
-  "kind": "rest",
-  "credentials": { "url": "https://maps.googleapis.com" }
-},
-"[production]": {
-  "GoogleAPI-SR": {
-    "kind": "rest",
-    "credentials": { "destination": "GoogleAPI-SR" }
-  }
-}
-```
-
-#### Updating API Key
-
-To rotate/update the API key:
-1. Update `URL.queries.key` in BTP Cockpit destination
-2. Restart app: `cf restart gmaps-app-srv`
-3. No redeployment needed ✅
-
----
-
-## Troubleshooting
-
-### Map Doesn't Load
-
-**Solutions:**
-
-1. Check API key is valid
-2. Open browser console for errors
-3. Verify coordinates are valid numbers
-4. Click "Refresh Map" button
-5. Check network access to Google Maps
-
-### No Data Appears
+### Undeploy
 
 ```bash
-# Check database
-sqlite3 db.sqlite "SELECT COUNT(*) FROM gmaps_db_RouteDirections;"
-
-# Redeploy
-cds deploy --to sqlite
+npm run undeploy
 ```
 
-### Port Already in Use
+---
 
+## Configuration
+
+### Local vs Production
+
+| Config | Local Dev | Production (CF) |
+|--------|-----------|-----------------|
+| Database | SQLite (`db.sqlite`) | SAP HANA (HDI container) |
+| Auth | Mocked (user `alice`, role `gmaps_user`) | XSUAA |
+| Google Maps | Direct URL + env var API key | BTP Destination `GoogleAPI-SR` |
+| EWM / BP | SAP sandbox API (`api.sap.com`) | BTP Destination `EWM-API` / `BP-API` |
+| Messaging | Docker Kafka (KafkaJS) | SAP Event Mesh |
+| Teams | Incoming Webhook URL | Same (or Power Automate) |
+
+---
+
+## Mobile Testing
+
+**Same WiFi (no HTTPS needed for localhost):**
 ```bash
-# Kill process on port 4004
-lsof -i :4004
-kill -9 <PID>
+APP_BASE_URL=http://192.168.x.x:4004 cds watch
+```
 
-# Or use different port
-cds serve --port 5000
+**ngrok (HTTPS, required for GPS on some browsers):**
+```bash
+ngrok http 4004
+# Set APP_BASE_URL=https://xxxx.ngrok-free.app in .env
 ```
 
 ---
 
-## API Reference
+## Phase 3 (Planned): Teams Chatbot
 
-### OData Endpoints
-
-**Base:** `http://localhost:4004/odata/v4/gmaps`
-
-| Endpoint | Description |
-|----------|-------------|
-| `/RouteDirections` | List all routes |
-| `/RouteDirections(guid)` | Get specific route |
-| `/RouteDirections?$expand=steps` | Route with steps |
-| `/RouteSteps` | List all steps |
-| `/$metadata` | Service metadata |
-
-### Entities
-
-**RouteDirections:**
-
-```typescript
-{
-  route_ID: UUID,
-  origin: String(500),
-  destination: String(500),
-  distance: String(50),
-  duration: String(50),
-  bounds_*: Double,
-  steps: RouteSteps[]
-}
-```
-
-**RouteSteps:**
-
-```typescript
-{
-  ID: UUID,
-  route_ID: UUID,
-  stepNumber: Integer,
-  instruction: String(5000),
-  startLat: Double,
-  startLng: Double,
-  endLat: Double,
-  endLng: Double,
-  travelMode: String(20),
-  maneuver: String(50)
-}
-```
+Natural language interface using **SAP AI Core + Generative AI Hub + LangGraph** for dispatchers to manage deliveries via Teams chat. See [docs/cap-iot-tracking-patterns.md](docs/cap-iot-tracking-patterns.md) for full design.
 
 ---
 
-## Additional Documentation
+## Tech Stack
 
-| Document | Description |
-|----------|-------------|
-| `DETAILED_DESIGN_DOCUMENT.md` | Complete technical architecture |
-| `mta.yaml` | BTP deployment configuration |
-| `xs-security.json` | Authentication setup |
-
-### External Resources
-
-- **SAP CAP:** https://cap.cloud.sap/docs/
-- **Fiori Elements:** https://ui5.sap.com/
-- **Google Maps API:** https://developers.google.com/maps/documentation/javascript
-- **OData V4:** https://www.odata.org/documentation/
-
----
-
-## 🎯 Quick Links
-
-- **Local App:** http://localhost:4004/routes.routes/webapp/index.html
-- **OData Service:** http://localhost:4004/odata/v4/gmaps
-- **Metadata:** http://localhost:4004/odata/v4/gmaps/$metadata
+| Layer | Technology |
+|-------|-----------|
+| Backend | SAP CAP (Node.js), CDS, OData V4 |
+| Frontend | SAP UI5 1.144, Fiori Elements v4, sap.uxap.ObjectPageLayout |
+| Maps | Google Maps JavaScript API, Directions API |
+| Database | SQLite (dev), SAP HANA (prod) |
+| Auth | XSUAA, mocked auth (dev) |
+| Messaging | KafkaJS + Docker KRaft (dev), SAP Event Mesh (prod) |
+| Notifications | MS Teams Incoming Webhook (MessageCard) |
+| Mobile GPS | Browser Geolocation API (navigator.geolocation) |
+| QR Code | qrcode npm (pure Node.js, base64 PNG) |
+| Deployment | MTA, Cloud Foundry, BTP |
 
 ---
 
-**Version:** 1.0  
-**Last Updated:** 29 January 2026  
-**Status:** ✅ Production Ready
+**Version:** 2.0
+**Last Updated:** 17 April 2026
+**Branch:** main (merged from feature2_gmap_iot)
