@@ -308,43 +308,49 @@ Natural language interface in Microsoft Teams for dispatchers to manage deliveri
                         │ Azure Bot Service
                         ▼
 ┌──────────────────────────────────────────────────────────────┐
-│  LangGraph Agent (Python)                                     │
-│  ┌──────────────┐  ┌──────────────────────────────────────┐ │
-│  │ Claude / GPT  │  │ Tools (OData V4 endpoints)           │ │
-│  │ (reasoning)   │→│                                      │ │
-│  │               │  │ list_open_deliveries()               │ │
-│  │               │  │   GET /odata/v4/ewm/                 │ │
-│  │               │  │       OutboundDeliveries              │ │
-│  │               │  │                                      │ │
-│  │               │  │ get_delivery_details(doc)             │ │
-│  │               │  │   GET /odata/v4/ewm/                 │ │
-│  │               │  │       OutboundDeliveries('{doc}')     │ │
-│  │               │  │                                      │ │
-│  │               │  │ get_delivery_route(doc)               │ │
-│  │               │  │   POST /odata/v4/ewm/getDeliveryRoute│ │
-│  │               │  │                                      │ │
-│  │               │  │ assign_driver(doc, mobile, truck)     │ │
-│  │               │  │   POST /odata/v4/tracking/            │ │
-│  │               │  │       assignDriver                    │ │
-│  │               │  │                                      │ │
-│  │               │  │ get_driver_status(doc)                │ │
-│  │               │  │   GET /odata/v4/tracking/             │ │
-│  │               │  │       DriverAssignment?$filter=...    │ │
-│  │               │  │                                      │ │
-│  │               │  │ get_live_location(assignmentId)       │ │
-│  │               │  │   GET /odata/v4/tracking/             │ │
-│  │               │  │       latestGps(assignmentId=...)     │ │
-│  │               │  │                                      │ │
-│  │               │  │ close_trip(assignmentId)              │ │
-│  │               │  │   POST /odata/v4/tracking/            │ │
-│  │               │  │       confirmDelivery                 │ │
-│  │               │  │                                      │ │
-│  │               │  │ get_directions()                      │ │
-│  │               │  │   GET /odata/v4/gmaps/                │ │
-│  │               │  │       RouteDirections?$expand=steps   │ │
-│  └──────────────┘  └──────────────────────────────────────┘ │
+│  SAP AI Core (Generative AI Hub)                              │
+│  ┌──────────────────────────────────────────────────────────┐│
+│  │ LangGraph Agent (Python, deployed as AI Core serving)    ││
+│  │                                                          ││
+│  │ ┌──────────────┐  ┌────────────────────────────────────┐││
+│  │ │ SAP GenAI Hub │  │ Tools (OData V4 endpoints)        │││
+│  │ │ (Claude/GPT   │→│                                    │││
+│  │ │  via AI Core) │  │ list_open_deliveries()             │││
+│  │ │               │  │   GET /odata/v4/ewm/               │││
+│  │ │               │  │       OutboundDeliveries            │││
+│  │ │               │  │                                    │││
+│  │ │               │  │ get_delivery_details(doc)           │││
+│  │ │               │  │   GET /odata/v4/ewm/               │││
+│  │ │               │  │       OutboundDeliveries('{doc}')   │││
+│  │ │               │  │                                    │││
+│  │ │               │  │ get_delivery_route(doc)             │││
+│  │ │               │  │   POST /odata/v4/ewm/              │││
+│  │ │               │  │       getDeliveryRoute              │││
+│  │ │               │  │                                    │││
+│  │ │               │  │ assign_driver(doc, mobile, truck)   │││
+│  │ │               │  │   POST /odata/v4/tracking/          │││
+│  │ │               │  │       assignDriver                  │││
+│  │ │               │  │                                    │││
+│  │ │               │  │ get_driver_status(doc)              │││
+│  │ │               │  │   GET /odata/v4/tracking/           │││
+│  │ │               │  │       DriverAssignment?$filter=...  │││
+│  │ │               │  │                                    │││
+│  │ │               │  │ get_live_location(assignmentId)     │││
+│  │ │               │  │   GET /odata/v4/tracking/           │││
+│  │ │               │  │       latestGps(assignmentId=...)   │││
+│  │ │               │  │                                    │││
+│  │ │               │  │ close_trip(assignmentId)            │││
+│  │ │               │  │   POST /odata/v4/tracking/          │││
+│  │ │               │  │       confirmDelivery               │││
+│  │ │               │  │                                    │││
+│  │ │               │  │ get_directions()                    │││
+│  │ │               │  │   GET /odata/v4/gmaps/              │││
+│  │ │               │  │       RouteDirections?$expand=steps │││
+│  │ └──────────────┘  └────────────────────────────────────┘││
+│  └──────────────────────────────────────────────────────────┘│
+│  BTP service bindings: XSUAA, Destination, AI Core            │
 └──────────────────────────┬───────────────────────────────────┘
-                           │ HTTP (Basic Auth / OAuth)
+                           │ HTTP (OAuth2 via BTP Destination)
                            ▼
 ┌──────────────────────────────────────────────────────────────┐
 │  CAP Backend (existing, no changes needed)                    │
@@ -357,17 +363,24 @@ Natural language interface in Microsoft Teams for dispatchers to manage deliveri
 
 | Requirement | Purpose | Cost |
 |-------------|---------|------|
-| **Azure subscription** | Host Azure Bot Service + Bot registration | Free tier (standard channels = $0) |
+| **SAP AI Core** (BTP) | Host LangGraph agent + LLM access via Generative AI Hub | BTP entitlement (SAP employees: internal sandbox) |
+| **SAP Generative AI Hub** | Provides Claude/GPT models without separate API keys | Included with AI Core |
+| **Azure subscription** | Azure Bot Service registration (required for Teams bots) | Free tier (standard channels = $0) |
 | **Azure Bot Service** | Required by Microsoft for all Teams bots | Free for Teams channel |
 | **M365 Developer Program** | Own Teams tenant with admin rights for testing | Free (25 E5 licenses, 90 days renewable) |
 | **Teams admin approval** | Install custom bot in corporate Teams | Required for SAP corporate tenant; not needed in dev tenant |
-| **Python 3.11+** | LangGraph agent runtime | Already installed |
-| **LangGraph + langchain** | Agent framework with tool calling | pip install (free) |
-| **Claude API or OpenAI API** | LLM for natural language understanding | API key + usage-based pricing |
+| **Python 3.11+** | LangGraph agent runtime (local dev + AI Core Docker) | Already installed |
 
 **Sign up links:**
 - M365 Developer Program: https://developer.microsoft.com/en-us/microsoft-365/dev-program
 - Azure free account: https://azure.microsoft.com/free/
+- SAP AI Core: via BTP cockpit → Service Marketplace → "SAP AI Core"
+
+**SAP AI Core setup:**
+1. Create AI Core service instance in BTP subaccount
+2. Create service key (for local development)
+3. Enable Generative AI Hub (provides Claude, GPT-4, etc.)
+4. For deployment: build Docker image → push to AI Core Docker registry → create serving configuration
 
 ### LangGraph Tools Specification
 
@@ -470,66 +483,135 @@ Bot: ✅ Delivery 80000001 marked as DELIVERED
 
 ### Implementation Steps
 
-1. **Set up M365 Developer Program** — get own Teams tenant with admin rights
-2. **Create Azure Bot Service** — register bot, get App ID + secret
-3. **Scaffold Python project** — `bot/` directory in this repo
+1. **Set up SAP AI Core** — create service instance, enable Generative AI Hub, get service key
+2. **Set up M365 Developer Program** — get own Teams tenant with admin rights
+3. **Create Azure Bot Service** — register bot, get App ID + secret
+4. **Scaffold Python project** — `bot/` directory in this repo
    ```
    bot/
-   ├── app.py              # FastAPI server
-   ├── agent.py            # LangGraph agent with tools
+   ├── app.py                  # FastAPI server (local dev + AI Core serving)
+   ├── agent.py                # LangGraph agent with tools
    ├── tools/
-   │   ├── ewm.py          # list_deliveries, get_details, get_route
-   │   ├── tracking.py     # assign_driver, get_status, get_location, close_trip
-   │   └── gmaps.py        # get_directions
-   ├── teams_adapter.py    # Azure Bot Framework → LangGraph bridge
-   ├── requirements.txt    # langchain, langgraph, botbuilder-core, fastapi
-   └── .env                # AZURE_BOT_APP_ID, AZURE_BOT_APP_SECRET, CAP_BASE_URL
+   │   ├── ewm.py              # list_deliveries, get_details, get_route
+   │   ├── tracking.py         # assign_driver, get_status, get_location, close_trip
+   │   └── gmaps.py            # get_directions
+   ├── teams_adapter.py        # Azure Bot Framework → LangGraph bridge
+   ├── ai_core_llm.py          # SAP Generative AI Hub LLM wrapper for LangChain
+   ├── Dockerfile              # For AI Core deployment
+   ├── serving_template.yaml   # AI Core serving configuration
+   ├── requirements.txt        # langgraph, langchain, botbuilder-core, fastapi,
+   │                           # generative-ai-hub-sdk, ai-core-sdk
+   └── .env                    # AZURE_BOT_APP_ID, AZURE_BOT_APP_SECRET,
+                               # AICORE_SERVICE_KEY, CAP_BASE_URL
    ```
-4. **Implement LangGraph agent** — tools call CAP OData, Claude/GPT reasons
-5. **Test locally** — CLI interface first (no Teams)
-6. **Connect to Teams** — Azure Bot Framework SDK, register messaging endpoint
-7. **Deploy** — Azure Functions (Python) or BTP Kyma
+5. **Implement SAP GenAI Hub LLM wrapper** — use `generative-ai-hub-sdk` for LangChain-compatible LLM
+   ```python
+   from gen_ai_hub.proxy.langchain import ChatOpenAI  # or init_llm()
+   llm = ChatOpenAI(proxy_model_name='gpt-4')  # or 'claude-3-sonnet'
+   ```
+6. **Implement LangGraph agent** — tools call CAP OData, SAP GenAI Hub provides LLM
+7. **Test locally** — CLI interface first (no Teams), use AI Core service key for LLM
+8. **Connect to Teams** — Azure Bot Framework SDK, register messaging endpoint
+9. **Deploy to AI Core** — Docker image → AI Core Docker registry → serving config
+10. **Register bot endpoint** — Azure Bot Service messaging endpoint → AI Core serving URL
 
 ### Auth Strategy
 
-| Environment | CAP Auth | Bot → CAP |
-|------------|---------|-----------|
-| Local dev | Basic auth (alice:alice) | Same Basic auth in tool HTTP calls |
-| Production | XSUAA (OAuth2) | Client credentials flow: Bot gets token from XSUAA, passes as Bearer |
+| Environment | CAP Auth | Bot → CAP | LLM Access |
+|------------|---------|-----------|------------|
+| Local dev | Basic auth (alice:alice) | Same Basic auth in tool HTTP calls | AI Core service key → GenAI Hub |
+| Production | XSUAA (OAuth2) | BTP Destination with OAuth2 client credentials | AI Core binding → GenAI Hub (automatic) |
 
 ### Tech Stack
 
-| Component | Technology | Version |
-|-----------|-----------|---------|
-| Bot runtime | Python | 3.11+ |
-| Agent framework | LangGraph | latest |
-| LLM | Claude (Anthropic) or GPT-4 (OpenAI) | latest |
-| Bot framework | botbuilder-python (Azure Bot SDK) | 4.x |
-| API server | FastAPI | 0.100+ |
-| Bot hosting | Azure Functions or BTP Kyma | — |
-| Bot registration | Azure Bot Service | Free tier |
-| Teams tenant (dev) | M365 Developer Program | Free |
+| Component | Technology | Notes |
+|-----------|-----------|-------|
+| Agent runtime | Python 3.11+ | Deployed as Docker on AI Core |
+| Agent framework | LangGraph + LangChain | Agentic tool-calling with state management |
+| LLM provider | **SAP Generative AI Hub** (AI Core) | Claude / GPT-4 via `generative-ai-hub-sdk` — no separate API keys |
+| Bot framework | botbuilder-python (Azure Bot SDK 4.x) | Required for Teams channel |
+| API server | FastAPI | Handles bot webhook + health endpoints |
+| Agent hosting | **SAP AI Core** (serving) | Docker container, auto-scales, BTP service bindings |
+| Bot registration | Azure Bot Service (free tier) | Points messaging endpoint to AI Core serving URL |
+| Teams tenant (dev) | M365 Developer Program (free) | Own admin rights for bot sideloading |
+
+### SAP AI Core Specifics
+
+**Generative AI Hub SDK** (replaces direct Anthropic/OpenAI API calls):
+```python
+# Install
+pip install generative-ai-hub-sdk
+
+# LangChain integration
+from gen_ai_hub.proxy.langchain import ChatOpenAI
+llm = ChatOpenAI(proxy_model_name='gpt-4')  # or 'anthropic--claude-3-sonnet'
+
+# Or direct usage
+from gen_ai_hub.proxy.core import get_proxy_client
+proxy_client = get_proxy_client('gen-ai-hub')
+response = proxy_client.chat.completions.create(
+    model_name='gpt-4',
+    messages=[{"role": "user", "content": "Hello"}]
+)
+```
+
+**AI Core Deployment** (Docker-based serving):
+```yaml
+# serving_template.yaml
+apiVersion: ai.sap.com/v1alpha1
+kind: ServingTemplate
+metadata:
+  name: delivery-bot
+spec:
+  template:
+    spec:
+      containers:
+        - name: bot-server
+          image: "docker.io/your-registry/delivery-bot:latest"
+          ports:
+            - containerPort: 8000
+          env:
+            - name: AZURE_BOT_APP_ID
+              valueFrom: { secretKeyRef: { name: bot-secrets, key: app_id } }
+            - name: CAP_BASE_URL
+              value: "https://your-cap-app.cfapps.eu10.hana.ondemand.com"
+```
+
+**Local dev with AI Core service key**:
+```bash
+# Download service key from BTP cockpit → AI Core → Service Keys
+# Set env var pointing to the key file
+export AICORE_SERVICE_KEY_PATH=./ai-core-service-key.json
+
+# Or set individual vars
+export AICORE_AUTH_URL=https://xxx.authentication.eu10.hana.ondemand.com
+export AICORE_CLIENT_ID=sb-xxx
+export AICORE_CLIENT_SECRET=xxx
+export AICORE_API_BASE=https://api.ai.xxx.aws.ml.hana.ondemand.com
+```
 
 ---
 
 ## Production Deployment Checklist
 
-### CAP Backend (BTP)
+### CAP Backend (BTP Cloud Foundry)
 - [ ] `mbt build` → deploy to Cloud Foundry
 - [ ] HANA HDI container for persistence
 - [ ] XSUAA for authentication
 - [ ] BTP Destination Service for Google Maps API + EWM API
 - [ ] SAP Event Mesh (replaces Docker Kafka)
 
-### Teams Bot (Azure)
-- [ ] Azure Bot Service registration
-- [ ] Azure Functions for Python agent
-- [ ] Teams admin approval for bot installation
-- [ ] XSUAA client credentials for Bot → CAP auth
-- [ ] Anthropic/OpenAI API key for LLM
+### Teams Bot (SAP AI Core + Azure)
+- [ ] SAP AI Core service instance + Generative AI Hub enabled
+- [ ] Docker image built and pushed to AI Core registry
+- [ ] AI Core serving configuration deployed
+- [ ] Azure Bot Service registration (messaging endpoint → AI Core serving URL)
+- [ ] M365 Developer tenant for testing (or corporate Teams admin approval)
+- [ ] BTP Destination for CAP backend (OAuth2 client credentials)
 
 ### Monitoring
 - [ ] SAP Cloud Logging for CAP
-- [ ] Azure Application Insights for Bot
+- [ ] SAP AI Core metrics/logs for bot agent
 - [ ] Kafka/Event Mesh monitoring
 - [ ] Teams webhook health checks
+- [ ] Azure Bot Service analytics
