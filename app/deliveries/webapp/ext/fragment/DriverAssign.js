@@ -13,7 +13,7 @@ sap.ui.define([
 
     var handler = {
 
-        openDialog: function (deliveryDoc, existingQrImage, existingQrUrl) {
+        openDialog: function (deliveryDoc, existingQrImage) {
             _deliveryDoc = deliveryDoc;
             handler._getDialog().then(function (oDialog) {
                 var inputTruck = _byId("inputTruckReg");
@@ -25,7 +25,7 @@ sap.ui.define([
                 if (errorStrip) errorStrip.setVisible(false);
 
                 if (existingQrImage) {
-                    handler._showQR(existingQrImage, existingQrUrl);
+                    handler._showQR(existingQrImage);
                 } else {
                     var assignForm = _byId("assignForm");
                     var qrSection = _byId("qrSection");
@@ -73,7 +73,7 @@ sap.ui.define([
                     return data;
                 });
             }).then(function (assignment) {
-                handler._showQR(assignment.QRCodeImage, assignment.QRCodeUrl);
+                handler._showQR(assignment.QRCodeImage);
             }).catch(function (err) {
                 var strip = _byId("assignErrorStrip");
                 if (strip) { strip.setText(err.message || "Failed to assign driver"); strip.setVisible(true); }
@@ -85,7 +85,7 @@ sap.ui.define([
             if (_dialog) _dialog.close();
         },
 
-        _showQR: function (qrImageBase64, qrUrl) {
+        _showQR: function (qrImageBase64) {
             var assignForm = _byId("assignForm");
             var btnAssign = _byId("btnAssign");
             var qrSection = _byId("qrSection");
@@ -95,15 +95,9 @@ sap.ui.define([
             if (btnAssign) btnAssign.setVisible(false);
             if (qrSection) qrSection.setVisible(true);
             if (htmlCtrl) {
-                var fullUrl = qrUrl ? (window.location.origin + qrUrl) : "";
-                var linkHtml = fullUrl
-                    ? '<p style="margin:8px 0 0;font-size:0.8rem;word-break:break-all">' +
-                      '<a href="' + fullUrl + '" target="_blank" style="color:#0a6ed1">' + fullUrl + '</a></p>'
-                    : "";
                 htmlCtrl.setContent(
                     '<div style="text-align:center;padding:8px">' +
                     '<img src="' + qrImageBase64 + '" style="max-width:220px;display:block;margin:0 auto;" alt="QR Code"/>' +
-                    linkHtml +
                     '</div>'
                 );
             }
