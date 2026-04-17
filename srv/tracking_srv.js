@@ -155,6 +155,20 @@ module.exports = class TrackingService extends cds.ApplicationService {
                     recordedAt:  gpsRow.RecordedAt
                 });
 
+                // 6. Teams alert + reverse geocode only for IN_TRANSIT trucks
+                //    (ASSIGNED = not yet started, DELIVERED = blocked above)
+                if (assignment.Status === 'IN_TRANSIT') {
+                    teamsNotify.post('LOCATION', {
+                        TruckRegistration: assignment.TruckRegistration || null,
+                        MobileNumber:      assignment.MobileNumber,
+                        DeliveryDocument:  assignment.DeliveryDocument,
+                        Latitude:          latitude,
+                        Longitude:         longitude,
+                        Speed:             speed || null,
+                        RecordedAt:        gpsRow.RecordedAt
+                    }).catch(err => console.error('Teams location notify (non-fatal):', err.message));
+                }
+
                 return true;
             } catch (err) {
                 console.error('updateLocation error:', err.message);
@@ -252,6 +266,16 @@ module.exports = class TrackingService extends cds.ApplicationService {
                 console.error('latestGps error:', err.message);
                 return req.error(500, err.message);
             }
+        });
+
+        // ----------------------------------------------------------------
+        // /tracking/config.js — injects runtime config into driver tracking page
+        // ----------------------------------------------------------------
+        const app = cds.app;
+        app.get('/tracking/config.js', (req, res) => {
+            const intervalMs = parseInt(process.env.GPS_POLL_INTERVAL_MS, 10) || 60000;
+            res.setHeader('Content-Type', 'application/javascript');
+            res.send(`window.GPS_POLL_INTERVAL_MS = ${intervalMs};`);
         });
 
         return super.init();

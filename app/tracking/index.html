@@ -4,6 +4,7 @@
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
     <title>Driver Tracking</title>
+    <script src="/tracking/config.js"></script>
     <script id="sap-ui-bootstrap"
         src="https://sapui5.hana.ondemand.com/1.144.0/resources/sap-ui-core.js"
         data-sap-ui-theme="sap_horizon"
@@ -382,7 +383,7 @@
                         if (navigator.geolocation) {
                             _watchId = navigator.geolocation.watchPosition(onPosition, onGpsError, { enableHighAccuracy: true });
                         } else { onGpsError(); }
-                        _intervalId = setInterval(sendLocation, 30000);
+                        _intervalId = setInterval(sendLocation, window.GPS_POLL_INTERVAL_MS || 60000);
                         if (navigator.wakeLock) navigator.wakeLock.request("screen").catch(function () {});
                     }).catch(function () {
                         opHeader.setObjectTitle("Assignment Not Found");

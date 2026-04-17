@@ -9,9 +9,24 @@ function mapsLink(lat, lng) {
     return lat && lng ? `https://www.google.com/maps?q=${lat},${lng}` : '';
 }
 
+async function reverseGeocode(lat, lng) {
+    const key = process.env.GOOGLE_MAPS_API_KEY;
+    if (!key || !lat || !lng) return null;
+    try {
+        const res = await axios.get(
+            `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${key}`
+        );
+        const results = res.data && res.data.results;
+        return results && results[0] ? results[0].formatted_address : null;
+    } catch (_) {
+        return null;
+    }
+}
+
 const MESSAGES = {
     ASSIGNED: (d) => ({
         "@type": "MessageCard",
+        "summary": `Driver Assigned — Delivery ${d.DeliveryDocument}`,
         "themeColor": "0854A0",
         "title": `🚚 Driver Assigned — Delivery ${d.DeliveryDocument}`,
         "sections": [{
@@ -31,12 +46,14 @@ const MESSAGES = {
 
     LOCATION: (d) => ({
         "@type": "MessageCard",
+        "summary": `Location Update — ${d.TruckRegistration || d.MobileNumber}`,
         "themeColor": "E8581C",
         "title": `📍 Location Update — ${d.TruckRegistration || d.MobileNumber}`,
         "sections": [{
             "facts": [
                 { "name": "Truck", "value": d.TruckRegistration || d.MobileNumber || "—" },
                 { "name": "Delivery", "value": d.DeliveryDocument || "—" },
+                { "name": "Address", "value": d.Address || "—" },
                 { "name": "Coordinates", "value": `${d.Latitude}, ${d.Longitude}` },
                 { "name": "Speed", "value": d.Speed ? `${(d.Speed * 3.6).toFixed(0)} km/h` : "—" },
                 { "name": "Recorded At", "value": fmtDate(d.RecordedAt) }
@@ -52,6 +69,7 @@ const MESSAGES = {
 
     DELIVERED: (d) => ({
         "@type": "MessageCard",
+        "summary": `Delivery Complete — ${d.DeliveryDocument}`,
         "themeColor": "2B7C2B",
         "title": `✅ Delivery Complete — ${d.DeliveryDocument}`,
         "sections": [{
@@ -86,6 +104,9 @@ module.exports = {
             return;
         }
         try {
+            if (event === 'LOCATION' && data.Latitude && data.Longitude) {
+                data.Address = await reverseGeocode(data.Latitude, data.Longitude);
+            }
             await axios.post(url, cardFn(data));
         } catch (err) {
             console.error('Teams notification failed:', err.message);

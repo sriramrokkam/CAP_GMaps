@@ -40,7 +40,7 @@ sap.ui.define([
                     return;
                 }
                 sap.ui.require(["ewm/deliveries/ext/fragment/DriverAssign"], function (DriverAssign) {
-                    DriverAssign.openDialog(deliveryDoc, data.QRCodeImage);
+                    DriverAssign.openDialog(deliveryDoc, data.QRCodeImage, data.QRCodeUrl);
                 });
             }).catch(() => {
                 MessageToast.show("Failed to retrieve QR code.");

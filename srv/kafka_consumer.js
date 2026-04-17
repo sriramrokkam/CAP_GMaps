@@ -1,6 +1,5 @@
 const { Kafka } = require('kafkajs');
 const cds = require('@sap/cds');
-const teamsNotify = require('./teams_notify');
 
 const kafka = new Kafka({
     clientId: 'cap-gps-consumer',
@@ -8,7 +7,6 @@ const kafka = new Kafka({
 });
 
 const consumer = kafka.consumer({ groupId: 'cap-gps-group' });
-const _timers  = {};   // topicName → timeout handle
 
 let _db = null;   // set via start(db)
 
@@ -40,20 +38,6 @@ async function _handleMessage({ topic, message }) {
             console.error('kafka_consumer: DB insert failed:', err.message);
         }
     }
-
-    // 5-min Teams location timer: reset on each message
-    if (_timers[topic]) clearTimeout(_timers[topic]);
-    _timers[topic] = setTimeout(() => {
-        teamsNotify.post('LOCATION', {
-            TruckRegistration: gps.truck || null,
-            MobileNumber:      gps.mobile || '',
-            DeliveryDocument:  gps.deliveryDoc || topic.replace('gps-', ''),
-            Latitude:          gps.lat,
-            Longitude:         gps.lng,
-            RecordedAt:        gps.recordedAt
-        }).catch(err => console.error('Teams location timer failed:', err.message))
-         .finally(() => { delete _timers[topic]; });
-    }, 5 * 60 * 1000);
 }
 
 async function start(db) {
@@ -69,11 +53,6 @@ async function start(db) {
     }
 }
 
-function clearTopicTimer(topicName) {
-    if (_timers[topicName]) {
-        clearTimeout(_timers[topicName]);
-        delete _timers[topicName];
-    }
-}
+function clearTopicTimer(topicName) {}
 
 module.exports = { start, clearTopicTimer };
