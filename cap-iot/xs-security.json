@@ -8,6 +8,10 @@
       "description": "User can access and use the Google Maps application"
     },
     {
+      "name": "$XSAPPNAME.Transport_Admin",
+      "description": "Transport Admin — can assign drivers, view all deliveries and tracking"
+    },
+    {
       "name": "$XSAPPNAME.emcallback",
       "description": "Enterprise-Messaging Callback Access",
       "grant-as-authority-to-apps": [
@@ -26,6 +30,14 @@
       "scope-references": [
         "$XSAPPNAME.gmaps_user"
       ]
+    },
+    {
+      "name": "Transport_Admin",
+      "description": "Transport Administrator",
+      "scope-references": [
+        "$XSAPPNAME.Transport_Admin",
+        "$XSAPPNAME.gmaps_user"
+      ]
     }
   ],
   "attributes": [],
@@ -35,6 +47,13 @@
       "description": "Google Maps Application User",
       "role-template-references": [
         "$XSAPPNAME.gmaps_user"
+      ]
+    },
+    {
+      "name": "TransportAdmin",
+      "description": "Transport Administrator — full access",
+      "role-template-references": [
+        "$XSAPPNAME.Transport_Admin"
       ]
     }
   ],

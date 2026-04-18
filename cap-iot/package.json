@@ -47,7 +47,8 @@
         "users": {
           "alice": {
             "roles": [
-              "gmaps_user"
+              "gmaps_user",
+              "Transport_Admin"
             ]
           }
         }
@@ -68,6 +69,22 @@
         "kind": "rest",
         "credentials": {
           "url": "https://sandbox.api.sap.com"
+        }
+      },
+      "[hybrid]": {
+        "db": { "kind": "hana" },
+        "auth": { "kind": "xsuaa" },
+        "GoogleAPI-SR": {
+          "kind": "rest",
+          "credentials": { "destination": "GoogleAPI-SR" }
+        },
+        "EWM-API": {
+          "kind": "rest",
+          "credentials": { "destination": "EWM-API" }
+        },
+        "BP-API": {
+          "kind": "rest",
+          "credentials": { "destination": "EWM-API" }
         }
       },
       "[production]": {

@@ -6,6 +6,9 @@ modules:
   - name: gmaps-app-srv
     type: nodejs
     path: gen/srv
+    parameters:
+      buildpack: nodejs_buildpack
+      instances: 1
     requires:
       - name: gmaps-app-destination
       - name: gmaps-app-db
@@ -137,6 +140,16 @@ resources:
                 URL: ~{srv-api/srv-url}
                 HTML5.DynamicDestination: true
                 HTML5.ForwardAuthToken: true
+              - Authentication: NoAuthentication
+                Name: GoogleAPI-SR
+                ProxyType: Internet
+                Type: HTTP
+                URL: https://maps.googleapis.com
+              - Authentication: NoAuthentication
+                Name: EWM-API
+                ProxyType: Internet
+                Type: HTTP
+                URL: https://sandbox.api.sap.com
             existing_destinations_policy: update
         version: 1.0.0
       service: destination
