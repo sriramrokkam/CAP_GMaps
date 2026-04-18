@@ -177,3 +177,5 @@ build-parameters:
       commands:
         - npm ci
         - npx cds build --production
+        - mkdir -p gen/srv/app/tracking
+        - cp app/tracking/index.html gen/srv/app/tracking/
