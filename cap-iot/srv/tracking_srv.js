@@ -242,8 +242,15 @@ module.exports = class TrackingService extends cds.ApplicationService {
     }
 
     _emit(topic, payload) {
-        cds.emit(topic, payload).catch(err =>
-            console.error(`Event Mesh emit failed (non-fatal): ${err.message}`)
-        );
+        try {
+            const result = cds.emit(topic, payload);
+            if (result && typeof result.catch === 'function') {
+                result.catch(err =>
+                    console.error(`Event Mesh emit failed (non-fatal): ${err.message}`)
+                );
+            }
+        } catch (err) {
+            console.error(`Event Mesh emit failed (non-fatal): ${err.message}`);
+        }
     }
 };
