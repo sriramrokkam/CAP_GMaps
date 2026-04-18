@@ -1,4 +1,5 @@
 const axios = require('axios');
+const cds = require('@sap/cds');
 
 function fmtDate(iso) {
     if (!iso) return '—';
@@ -10,13 +11,14 @@ function mapsLink(lat, lng) {
 }
 
 async function reverseGeocode(lat, lng) {
-    const key = process.env.GOOGLE_MAPS_API_KEY;
-    if (!key || !lat || !lng) return null;
+    if (!lat || !lng) return null;
     try {
-        const res = await axios.get(
-            `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${key}`
-        );
-        const results = res.data && res.data.results;
+        const googleApi = await cds.connect.to('GoogleAPI-SR');
+        const res = await googleApi.send({
+            method: 'GET',
+            path: `/maps/api/geocode/json?latlng=${lat},${lng}`
+        });
+        const results = res && res.results;
         return results && results[0] ? results[0].formatted_address : null;
     } catch (_) {
         return null;
