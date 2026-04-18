@@ -82,6 +82,24 @@ module.exports = class EwmService extends cds.ApplicationService {
                             DeliveryDate: _parseODataDate(d.DeliveryDate), createdAt: now, modifiedAt: now
                         };
                         cds.run(UPSERT.into(OutboundDeliveries).entries(singleRow)).catch(() => {});
+                        // Enrich with driver assignment data before returning
+                        const { DriverAssignment: DA } = cds.entities('iot_schema');
+                        if (DA) {
+                            const a = await cds.run(
+                                SELECT.one.from(DA)
+                                    .where({ DeliveryDocument: deliveryDoc })
+                                    .columns('MobileNumber','DriverName','TruckRegistration','Status','EstimatedDistance','EstimatedDuration')
+                                    .orderBy({ AssignedAt: 'desc' })
+                            ).catch(() => null);
+                            if (a) {
+                                singleRow.DriverStatus     = a.Status;
+                                singleRow.DriverMobile     = a.MobileNumber;
+                                singleRow.DriverName       = a.DriverName || null;
+                                singleRow.DriverTruck      = a.TruckRegistration || null;
+                                singleRow.EstimatedDistance = a.EstimatedDistance || null;
+                                singleRow.EstimatedDuration = a.EstimatedDuration || null;
+                            }
+                        }
                         return singleRow;
                     }
                 } catch (e) {
