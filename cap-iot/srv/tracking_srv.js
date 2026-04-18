@@ -1,76 +1,83 @@
 const cds = require('@sap/cds');
-const kafkaProducer = require('./kafka_producer');
-const kafkaConsumer = require('./kafka_consumer');
-const teamsNotify   = require('./teams_notify');
-const QRCode        = require('qrcode');
+const teamsNotify = require('./teams_notify');
+const QRCode      = require('qrcode');
 
 module.exports = class TrackingService extends cds.ApplicationService {
     async init() {
-        const { DriverAssignment, GpsCoordinates } = this.entities;
+        const { DriverAssignment, Driver } = this.entities;
         const db = await cds.connect.to('db');
 
-        // Start Kafka consumer (subscribes to gps-* topics)
-        kafkaConsumer.start(db).catch(err => {
-            console.error('Kafka consumer failed to start:', err.message);
-        });
-
-        // ----------------------------------------------------------------
-        // assignDriver — dispatcher creates a new assignment
-        // ----------------------------------------------------------------
         this.on('assignDriver', async (req) => {
             try {
-                const { deliveryDoc, mobileNumber, truckRegistration } = req.data;
+                const { deliveryDoc, mobileNumber, truckRegistration, driverName } = req.data;
 
-                // 1. Validate mobileNumber
-                if (!mobileNumber || mobileNumber.trim() === '') {
+                if (!mobileNumber || mobileNumber.trim() === '')
                     return req.error(400, 'mobileNumber is required');
-                }
 
-                // 2. Check for existing active assignment
                 const existing = await SELECT.one.from(DriverAssignment)
                     .where({ DeliveryDocument: deliveryDoc, Status: { in: ['ASSIGNED', 'IN_TRANSIT'] } });
-                if (existing) {
+                if (existing)
                     return req.error(409, `Active assignment already exists for delivery ${deliveryDoc}`);
+
+                let driver = await SELECT.one.from(Driver).where({ MobileNumber: mobileNumber });
+                if (!driver) {
+                    driver = {
+                        ID:                cds.utils.uuid(),
+                        MobileNumber:      mobileNumber,
+                        DriverName:        driverName || mobileNumber,
+                        TruckRegistration: truckRegistration || null,
+                        LicenseNumber:     null,
+                        IsActive:          true
+                    };
+                    await INSERT.into(Driver).entries(driver);
+                } else if (truckRegistration && truckRegistration !== driver.TruckRegistration) {
+                    await UPDATE(Driver).set({ TruckRegistration: truckRegistration }).where({ ID: driver.ID });
                 }
 
-                // 3. Generate UUID and topic/URL
-                const id    = cds.utils.uuid();
-                const topic  = `gps-${deliveryDoc}`;
-                const qrUrl  = `/tracking/index.html#${id}`;
-
-                // 4. Generate QR code base64 PNG
+                const id       = cds.utils.uuid();
+                const topic    = `default/gmaps-app/1/delivery/${deliveryDoc}`;
+                const qrUrl    = `/tracking/index.html#${id}`;
                 const baseUrl  = process.env.APP_BASE_URL || 'http://localhost:4004';
                 const qrImage  = await QRCode.toDataURL(`${baseUrl}${qrUrl}`);
+                const trackUrl = `${baseUrl}${qrUrl}`;
 
-                // 5. Fetch estimated distance/duration from stored route (best-effort)
-                // Uses the most recent RouteDirections row — best proxy since routes are per delivery
                 let estDistance = null, estDuration = null;
                 try {
                     const route = await db.run(
-                        SELECT.one.from('gmaps_schema_RouteDirections').columns('distance','duration').orderBy({ createdAt: 'desc' })
+                        SELECT.one.from('gmaps_schema_RouteDirections').columns('distance', 'duration').orderBy({ createdAt: 'desc' })
                     );
                     if (route) { estDistance = route.distance; estDuration = route.duration; }
-                } catch (_) { /* no route stored yet — leave null */ }
+                } catch (_) {}
 
-                // 6. Build assignment object
                 const assignment = {
-                    ID: id,
+                    ID:                id,
+                    driver_ID:         driver.ID,
                     DeliveryDocument:  deliveryDoc,
                     MobileNumber:      mobileNumber,
-                    TruckRegistration: truckRegistration || null,
+                    DriverName:        driverName || driver.DriverName || mobileNumber,
+                    TruckRegistration: truckRegistration || driver.TruckRegistration || null,
                     AssignedAt:        new Date().toISOString(),
                     Status:            'ASSIGNED',
-                    KafkaTopic:        topic,
+                    EventTopic:        topic,
                     QRCodeUrl:         qrUrl,
                     QRCodeImage:       qrImage,
                     EstimatedDistance: estDistance,
                     EstimatedDuration: estDuration
                 };
 
-                // 7. Persist, then fire-and-forget Kafka + Teams (don't block response)
                 await INSERT.into(DriverAssignment).entries(assignment);
-                kafkaProducer.createTopic(topic).catch(err => console.error('Kafka createTopic (non-fatal):', err.message));
-                teamsNotify.post('ASSIGNED', assignment).catch(err => console.error('Teams notify (non-fatal):', err.message));
+
+                this._emit(topic, {
+                    eventType:   'ASSIGNED',
+                    deliveryDoc: deliveryDoc,
+                    truck:       assignment.TruckRegistration,
+                    driver:      assignment.DriverName,
+                    mobile:      mobileNumber,
+                    trackUrl:    trackUrl,
+                    timestamp:   assignment.AssignedAt
+                });
+                teamsNotify.post('ASSIGNED', { ...assignment, TrackingUrl: trackUrl })
+                    .catch(err => console.error('Teams notify (non-fatal):', err.message));
 
                 return assignment;
             } catch (err) {
@@ -79,24 +86,14 @@ module.exports = class TrackingService extends cds.ApplicationService {
             }
         });
 
-        // ----------------------------------------------------------------
-        // getQRCode — retrieve the latest active assignment QR for a delivery
-        // ----------------------------------------------------------------
         this.on('getQRCode', async (req) => {
             try {
                 const { deliveryDoc } = req.data;
-
-                // 1. Find the most recent non-delivered assignment
                 const assignment = await SELECT.one.from(DriverAssignment)
                     .where({ DeliveryDocument: deliveryDoc, Status: { '!=': 'DELIVERED' } })
                     .orderBy({ AssignedAt: 'desc' });
-
-                // 2. Not found
-                if (!assignment) {
+                if (!assignment)
                     return req.error(404, `No active assignment for delivery ${deliveryDoc}`);
-                }
-
-                // 3. Return (QRCodeImage included)
                 return assignment;
             } catch (err) {
                 console.error('getQRCode error:', err.message);
@@ -104,60 +101,43 @@ module.exports = class TrackingService extends cds.ApplicationService {
             }
         });
 
-        // ----------------------------------------------------------------
-        // updateLocation — driver pushes a GPS ping
-        // ----------------------------------------------------------------
         this.on('updateLocation', async (req) => {
             try {
                 const { assignmentId, latitude, longitude, speed, accuracy } = req.data;
 
-                // 1. Fetch assignment
-                const assignment = await SELECT.one.from(DriverAssignment)
-                    .where({ ID: assignmentId });
-                if (!assignment) {
-                    return req.error(404, 'Assignment not found');
-                }
-                if (assignment.Status === 'DELIVERED') {
-                    return req.error(409, 'Delivery already completed');
-                }
+                const assignment = await SELECT.one.from(DriverAssignment).where({ ID: assignmentId });
+                if (!assignment)       return req.error(404, 'Assignment not found');
+                if (assignment.Status === 'DELIVERED') return req.error(409, 'Delivery already completed');
 
-                // 2. Build GPS row
-                const gpsRow = {
-                    ID:            cds.utils.uuid(),
-                    assignment_ID: assignmentId,
-                    Latitude:      latitude,
-                    Longitude:     longitude,
-                    Speed:         speed    || null,
-                    Accuracy:      accuracy || null,
-                    RecordedAt:    new Date().toISOString()
+                const now = new Date().toISOString();
+                const isFirstPing = assignment.Status === 'ASSIGNED';
+
+                const update = {
+                    CurrentLat:   latitude,
+                    CurrentLng:   longitude,
+                    CurrentSpeed: speed || null,
+                    LastGpsAt:    now
                 };
-
-                // 3. Persist GPS coordinate
-                await INSERT.into(GpsCoordinates).entries(gpsRow);
-
-                // 4. Transition ASSIGNED → IN_TRANSIT on first ping
-                if (assignment.Status === 'ASSIGNED') {
-                    await UPDATE(DriverAssignment)
-                        .set({ Status: 'IN_TRANSIT' })
-                        .where({ ID: assignmentId });
+                if (isFirstPing) {
+                    update.StartLat   = latitude;
+                    update.StartLng   = longitude;
+                    update.StartedAt  = now;
+                    update.Status     = 'IN_TRANSIT';
                 }
 
-                // 5. Publish to Kafka
-                await kafkaProducer.publish(assignment.KafkaTopic, {
-                    assignmentId,
+                await UPDATE(DriverAssignment).set(update).where({ ID: assignmentId });
+
+                this._emit(assignment.EventTopic, {
+                    eventType:   'GPS',
+                    deliveryDoc: assignment.DeliveryDocument,
                     lat:         latitude,
                     lng:         longitude,
-                    speed:       speed    || null,
-                    accuracy:    accuracy || null,
+                    speed:       speed || null,
                     truck:       assignment.TruckRegistration || null,
-                    mobile:      assignment.MobileNumber,
-                    deliveryDoc: assignment.DeliveryDocument,
-                    recordedAt:  gpsRow.RecordedAt
+                    timestamp:   now
                 });
 
-                // 6. Teams alert + reverse geocode only for IN_TRANSIT trucks
-                //    (ASSIGNED = not yet started, DELIVERED = blocked above)
-                if (assignment.Status === 'IN_TRANSIT') {
+                if (assignment.Status === 'IN_TRANSIT' || isFirstPing) {
                     teamsNotify.post('LOCATION', {
                         TruckRegistration: assignment.TruckRegistration || null,
                         MobileNumber:      assignment.MobileNumber,
@@ -165,7 +145,7 @@ module.exports = class TrackingService extends cds.ApplicationService {
                         Latitude:          latitude,
                         Longitude:         longitude,
                         Speed:             speed || null,
-                        RecordedAt:        gpsRow.RecordedAt
+                        RecordedAt:        now
                     }).catch(err => console.error('Teams location notify (non-fatal):', err.message));
                 }
 
@@ -176,47 +156,36 @@ module.exports = class TrackingService extends cds.ApplicationService {
             }
         });
 
-        // ----------------------------------------------------------------
-        // confirmDelivery — driver marks delivery as done
-        // ----------------------------------------------------------------
         this.on('confirmDelivery', async (req) => {
             try {
                 const { assignmentId } = req.data;
 
-                // 1. Fetch assignment
-                const assignment = await SELECT.one.from(DriverAssignment)
-                    .where({ ID: assignmentId });
-                if (!assignment) {
-                    return req.error(404, 'Assignment not found');
-                }
-                // Idempotent: already delivered
-                if (assignment.Status === 'DELIVERED') {
-                    return true;
-                }
+                const assignment = await SELECT.one.from(DriverAssignment).where({ ID: assignmentId });
+                if (!assignment) return req.error(404, 'Assignment not found');
+                if (assignment.Status === 'DELIVERED') return true;
 
-                // 2. Stamp delivery time
                 const deliveredAt = new Date().toISOString();
 
-                // 3. Update status
                 await UPDATE(DriverAssignment)
-                    .set({ Status: 'DELIVERED', DeliveredAt: deliveredAt })
+                    .set({
+                        Status:      'DELIVERED',
+                        DeliveredAt: deliveredAt,
+                        EndLat:      assignment.CurrentLat,
+                        EndLng:      assignment.CurrentLng
+                    })
                     .where({ ID: assignmentId });
 
-                // 4. Stop consumer timer for this topic
-                kafkaConsumer.clearTopicTimer(assignment.KafkaTopic);
+                this._emit(assignment.EventTopic, {
+                    eventType:   'DELIVERED',
+                    deliveryDoc: assignment.DeliveryDocument,
+                    lat:         assignment.CurrentLat,
+                    lng:         assignment.CurrentLng,
+                    truck:       assignment.TruckRegistration || null,
+                    timestamp:   deliveredAt
+                });
 
-                // 5. Delete Kafka topic (fire-and-forget — don't block response)
-                kafkaProducer.deleteTopic(assignment.KafkaTopic).catch(err => console.error('Kafka deleteTopic (non-fatal):', err.message));
-
-                // 6. Notify Teams with last GPS + customer details (fire-and-forget)
                 (async () => {
                     try {
-                        // Fetch last GPS position
-                        const lastGps = await SELECT.one.from(GpsCoordinates)
-                            .where({ assignment_ID: assignmentId })
-                            .orderBy({ RecordedAt: 'desc' });
-
-                        // Fetch ShipToParty from delivery
                         let shipToParty = null;
                         try {
                             const del = await db.run(
@@ -231,8 +200,8 @@ module.exports = class TrackingService extends cds.ApplicationService {
                             ...assignment,
                             DeliveredAt: deliveredAt,
                             ShipToParty: shipToParty,
-                            LastLat: lastGps ? lastGps.Latitude : null,
-                            LastLng: lastGps ? lastGps.Longitude : null
+                            LastLat:     assignment.CurrentLat,
+                            LastLng:     assignment.CurrentLng
                         });
                     } catch (e) { console.error('Teams DELIVERED notify error:', e.message); }
                 })();
@@ -244,40 +213,37 @@ module.exports = class TrackingService extends cds.ApplicationService {
             }
         });
 
-        // ----------------------------------------------------------------
-        // latestGps — return the most recent GPS ping for an assignment
-        // ----------------------------------------------------------------
         this.on('latestGps', async (req) => {
             try {
                 const { assignmentId } = req.data;
-
-                // 1. Fetch latest row (order by RecordedAt desc, limit 1)
-                const gpsRow = await SELECT.one.from(GpsCoordinates)
-                    .where({ assignment_ID: assignmentId })
-                    .orderBy({ RecordedAt: 'desc' });
-
-                // 2. Not found → null (no error; caller checks)
-                if (!gpsRow) {
-                    return null;
-                }
-
-                return gpsRow;
+                const row = await SELECT.one.from(DriverAssignment)
+                    .columns('CurrentLat', 'CurrentLng', 'CurrentSpeed', 'LastGpsAt')
+                    .where({ ID: assignmentId });
+                if (!row || !row.CurrentLat) return null;
+                return {
+                    Latitude:  row.CurrentLat,
+                    Longitude: row.CurrentLng,
+                    Speed:     row.CurrentSpeed,
+                    LastGpsAt: row.LastGpsAt
+                };
             } catch (err) {
                 console.error('latestGps error:', err.message);
                 return req.error(500, err.message);
             }
         });
 
-        // ----------------------------------------------------------------
-        // /tracking/config.js — injects runtime config into driver tracking page
-        // ----------------------------------------------------------------
-        const app = cds.app;
-        app.get('/tracking/config.js', (req, res) => {
+        cds.app.get('/tracking/config.js', (req, res) => {
             const intervalMs = parseInt(process.env.GPS_POLL_INTERVAL_MS, 10) || 60000;
             res.setHeader('Content-Type', 'application/javascript');
             res.send(`window.GPS_POLL_INTERVAL_MS = ${intervalMs};`);
         });
 
         return super.init();
+    }
+
+    _emit(topic, payload) {
+        cds.emit(topic, payload).catch(err =>
+            console.error(`Event Mesh emit failed (non-fatal): ${err.message}`)
+        );
     }
 };
