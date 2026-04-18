@@ -76,7 +76,8 @@ sap.ui.define([
 
         onAssign: function () {
             var oCombo   = _byId("inputMobile");
-            var mobile   = oCombo ? (oCombo.getValue ? oCombo.getValue().trim() : "") : "";
+            var selectedKey = oCombo ? oCombo.getSelectedKey() : "";
+            var mobile   = selectedKey || (oCombo && oCombo.getValue ? oCombo.getValue().split(" — ")[0].trim() : "");
             var name     = _byId("inputDriverName") ? _byId("inputDriverName").getValue().trim() : "";
             var truck    = _byId("inputTruckReg")   ? _byId("inputTruckReg").getValue().trim()   : "";
 
