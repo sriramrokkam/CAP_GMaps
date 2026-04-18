@@ -6,9 +6,6 @@ modules:
   - name: gmaps-app-srv
     type: nodejs
     path: gen/srv
-    parameters:
-      buildpack: nodejs_buildpack
-      instances: 1
     requires:
       - name: gmaps-app-destination
       - name: gmaps-app-db

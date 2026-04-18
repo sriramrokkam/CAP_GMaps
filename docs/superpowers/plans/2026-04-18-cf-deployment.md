@@ -38,7 +38,7 @@ Two BTP Destinations must be created manually in the BTP Cockpit before deployme
 
 - [ ] **Step 1: Login to CF**
 ```bash
-cf login -a https://api.cf.eu10.hana.ondemand.com
+cf login -a https://api.cf.us10.hana.ondemand.com
 # Enter SAP BTP credentials when prompted
 # Select org and space
 ```
@@ -251,38 +251,25 @@ git commit -m "feat: add GoogleAPI-SR and EWM-API destinations to mta.yaml"
 
 ---
 
-## Task 5: Set SAP_SANDBOX_API_KEY as CF Env Var on srv module (EWM-API Key)
+## Task 5: Set CF Environment Variables After Deploy (Manual)
 
-The SAP API Sandbox key cannot be set as a destination header via `mta.yaml`. Add it as an env var directly on the srv module so `process.env.SAP_SANDBOX_API_KEY` works in production.
+Sensitive keys and runtime config are set directly on the CF app — not in `mta.yaml`.
 
-**Files:**
-- Modify: `cap-iot/mta.yaml`
-
-- [ ] **Step 1: Add env var to srv module**
-
-In `cap-iot/mta.yaml`, under `gmaps-app-srv` module, add:
-
-```yaml
-  - name: gmaps-app-srv
-    type: nodejs
-    path: gen/srv
-    properties:
-      SAP_SANDBOX_API_KEY: <your-sandbox-key>
-      GOOGLE_MAPS_API_KEY: <your-gmaps-key>
-      TEAMS_WEBHOOK_URL: <your-teams-webhook-url>
-      APP_BASE_URL: https://<your-approuter-url>
-      GPS_POLL_INTERVAL_MS: "60000"
-    requires:
-      ...
-```
-
-> Replace placeholder values with actual keys. These are injected as CF env vars at deploy time. For production, consider using CF user-provided services or BTP Credential Store instead of hardcoding in mta.yaml.
-
-- [ ] **Step 2: Commit**
+- [ ] **Step 1: Set env vars on gmaps-app-srv**
 ```bash
-git add mta.yaml
-git commit -m "feat: add env vars (sandbox key, gmaps key, teams webhook) to srv module"
+cf set-env gmaps-app-srv GOOGLE_MAPS_API_KEY     <your-google-maps-key>
+cf set-env gmaps-app-srv SAP_SANDBOX_API_KEY      <your-sap-sandbox-key>
+cf set-env gmaps-app-srv TEAMS_WEBHOOK_URL        <your-teams-webhook-url>
+cf set-env gmaps-app-srv APP_BASE_URL             https://<approuter-url>
+cf set-env gmaps-app-srv GPS_POLL_INTERVAL_MS     60000
 ```
+
+- [ ] **Step 2: Restage to apply**
+```bash
+cf restage gmaps-app-srv
+```
+
+> Alternatively set via BTP Cockpit → Cloud Foundry → Spaces → your space → `gmaps-app-srv` → Environment Variables tab.
 
 ---
 
@@ -393,7 +380,7 @@ cf services
 - [ ] **Step 4: Get approuter URL**
 ```bash
 cf app gmaps-app-approuter | grep routes
-# routes: gmaps-app-approuter-<space>.cfapps.eu10.hana.ondemand.com
+# routes: gmaps-app-approuter-<space>.cfapps.us10.hana.ondemand.com
 ```
 
 ---

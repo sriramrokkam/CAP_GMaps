@@ -1,0 +1,12 @@
+gen/
+node_modules/
+mta_archives/
+*_mta_build_tmp
+*.mtar
+.cdsrc-private.json
+.env
+.env.local
+
+# UI5 build artifacts
+app/*/dist/
+resources/*.zip
