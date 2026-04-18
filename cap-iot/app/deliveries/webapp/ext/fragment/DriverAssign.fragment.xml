@@ -4,23 +4,27 @@
 
     <Dialog id="driverAssignDialog"
             title="Assign Driver"
-            contentWidth="380px">
+            contentWidth="420px">
 
-        <!-- Assignment form (shown initially) -->
         <VBox id="assignForm" class="sapUiSmallMargin">
+            <Label text="Mobile Number" required="true" class="sapUiTinyMarginBottom"/>
+            <ComboBox id="inputMobile"
+                      placeholder="Select or type mobile number"
+                      selectionChange=".onDriverSelect"
+                      class="sapUiSmallMarginBottom"
+                      width="100%"/>
+            <Label text="Driver Name" class="sapUiTinyMarginBottom"/>
+            <Input id="inputDriverName"
+                   placeholder="e.g. John Smith"
+                   class="sapUiSmallMarginBottom"/>
             <Label text="Truck Registration" class="sapUiTinyMarginBottom"/>
             <Input id="inputTruckReg"
-                   placeholder="e.g. TR001 (optional)"
-                   class="sapUiSmallMarginBottom"/>
-            <Label text="Mobile Number" required="true" class="sapUiTinyMarginBottom"/>
-            <Input id="inputMobile"
-                   placeholder="+49 123 456789 (mandatory)"
+                   placeholder="e.g. MH12AB1234 (optional)"
                    class="sapUiSmallMarginBottom"/>
             <MessageStrip id="assignErrorStrip" visible="false" type="Error"
                           showCloseButton="false" class="sapUiTinyMarginBottom"/>
         </VBox>
 
-        <!-- QR code display (hidden until assignment succeeds or getQRCode returns) -->
         <VBox id="qrSection" visible="false" class="sapUiSmallMargin" alignItems="Center">
             <Text id="qrLabel" text="Scan QR code to start tracking:"
                   class="sapUiTinyMarginBottom"/>
@@ -34,8 +38,7 @@
                     press=".onAssign"/>
         </beginButton>
         <endButton>
-            <Button text="Close"
-                    press=".onCloseDialog"/>
+            <Button text="Close" press=".onCloseDialog"/>
         </endButton>
     </Dialog>
 </core:FragmentDefinition>
