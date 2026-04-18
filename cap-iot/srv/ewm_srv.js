@@ -42,17 +42,19 @@ module.exports = class EwmService extends cds.ApplicationService {
                     SELECT.one.from(OutboundDeliveries).where({ DeliveryDocument: deliveryDoc })
                 );
                 if (row) {
-                    // Enrich with driver assignment data
+                    // Enrich with latest driver assignment data (including DELIVERED)
                     const { DriverAssignment } = cds.entities('iot_schema');
                     if (DriverAssignment) {
                         const a = await cds.run(
                             SELECT.one.from(DriverAssignment)
-                                .where({ DeliveryDocument: deliveryDoc, Status: { '!=': 'DELIVERED' } })
-                                .columns('MobileNumber','TruckRegistration','Status','EstimatedDistance','EstimatedDuration')
+                                .where({ DeliveryDocument: deliveryDoc })
+                                .columns('MobileNumber','DriverName','TruckRegistration','Status','EstimatedDistance','EstimatedDuration')
+                                .orderBy({ AssignedAt: 'desc' })
                         ).catch(() => null);
                         if (a) {
                             row.DriverStatus      = a.Status;
                             row.DriverMobile      = a.MobileNumber;
+                            row.DriverName        = a.DriverName || null;
                             row.DriverTruck       = a.TruckRegistration || null;
                             row.EstimatedDistance  = a.EstimatedDistance || row.EstimatedDistance || null;
                             row.EstimatedDuration  = a.EstimatedDuration || row.EstimatedDuration || null;
@@ -146,22 +148,29 @@ module.exports = class EwmService extends cds.ApplicationService {
                 });
             }
 
-            // Enrich rows with latest active driver assignment data
+            // Enrich rows with latest driver assignment data (including DELIVERED)
             const { DriverAssignment } = cds.entities('iot_schema');
             if (rows.length > 0 && DriverAssignment) {
                 const docIds = rows.map(r => r.DeliveryDocument);
                 const assignments = await cds.run(
                     SELECT.from(DriverAssignment)
-                        .where({ DeliveryDocument: { in: docIds }, Status: { '!=': 'DELIVERED' } })
-                        .columns('DeliveryDocument','MobileNumber','TruckRegistration','Status','EstimatedDistance','EstimatedDuration')
+                        .where({ DeliveryDocument: { in: docIds } })
+                        .columns('DeliveryDocument','MobileNumber','DriverName','TruckRegistration','Status','EstimatedDistance','EstimatedDuration','AssignedAt')
+                        .orderBy({ AssignedAt: 'desc' })
                 ).catch(() => []);
                 const assignMap = {};
-                for (const a of assignments) assignMap[a.DeliveryDocument] = a;
+                for (const a of assignments) {
+                    // Keep first (most recent) per delivery; prefer active over DELIVERED
+                    if (!assignMap[a.DeliveryDocument] || (assignMap[a.DeliveryDocument].Status === 'DELIVERED' && a.Status !== 'DELIVERED')) {
+                        assignMap[a.DeliveryDocument] = a;
+                    }
+                }
                 for (const row of rows) {
                     const a = assignMap[row.DeliveryDocument];
                     if (a) {
                         row.DriverStatus      = a.Status;
                         row.DriverMobile      = a.MobileNumber;
+                        row.DriverName        = a.DriverName || null;
                         row.DriverTruck       = a.TruckRegistration || null;
                         row.EstimatedDistance = a.EstimatedDistance || null;
                         row.EstimatedDuration = a.EstimatedDuration || null;

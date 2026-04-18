@@ -22,6 +22,7 @@ entity OutboundDeliveries : managed {
         DeliveryDate                      : DateTime     @title: 'Delivery Date';
         // Driver assignment fields — populated by JOIN in READ handler
         DriverStatus                      : String(20)   @title: 'Driver Status';
+        DriverName                        : String(100)  @title: 'Driver Name';
         DriverMobile                      : String(20)   @title: 'Driver Mobile';
         DriverTruck                       : String(20)   @title: 'Truck';
         EstimatedDistance                 : String(100)  @title: 'Est. Distance';

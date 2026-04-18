@@ -26,6 +26,7 @@ annotate service.OutboundDeliveries with @(
         SalesOrganization,
         ShipToParty,
         ShippingPoint,
+        DriverStatus,
         HdrGoodsMvtIncompletionStatus,
         HeaderBillgIncompletionStatus,
         DeliveryDate
@@ -36,14 +37,15 @@ annotate service.OutboundDeliveries with @(
         { $Type: 'UI.DataField', Value: ShippingPoint,                   Label: 'Shipping Point' },
         { $Type: 'UI.DataField', Value: ShipToParty,                     Label: 'Ship-To Party' },
         { $Type: 'UI.DataField', Value: SalesOrganization,               Label: 'Sales Org' },
+        { $Type: 'UI.DataField', Value: DriverStatus,                    Label: 'Driver Status' },
+        { $Type: 'UI.DataField', Value: DriverName,                      Label: 'Driver Name' },
+        { $Type: 'UI.DataField', Value: DriverTruck,                     Label: 'Truck No.' },
         { $Type: 'UI.DataField', Value: ShippingCondition,               Label: 'Shipping Cond.' },
         { $Type: 'UI.DataField', Value: HdrGoodsMvtIncompletionStatus,   Label: 'Goods Mvt Status' },
         { $Type: 'UI.DataField', Value: HeaderBillgIncompletionStatus,   Label: 'Billing Status' },
         { $Type: 'UI.DataField', Value: DeliveryDate,                    Label: 'Delivery Date' },
         { $Type: 'UI.DataField', Value: HeaderGrossWeight,               Label: 'Gross Weight' },
         { $Type: 'UI.DataField', Value: HeaderNetWeight,                 Label: 'Net Weight' },
-        { $Type: 'UI.DataField', Value: DriverStatus,                    Label: 'Driver Status' },
-        { $Type: 'UI.DataField', Value: DriverTruck,                     Label: 'Truck' },
         { $Type: 'UI.DataField', Value: DriverMobile,                    Label: 'Driver Mobile' },
         { $Type: 'UI.DataField', Value: EstimatedDistance,               Label: 'Est. Distance' },
         { $Type: 'UI.DataField', Value: EstimatedDuration,               Label: 'Est. Duration' }
@@ -73,7 +75,8 @@ annotate service.OutboundDeliveries with @(
             { $Type: 'UI.DataField', Value: EstimatedDistance,               Label: 'Est. Distance' },
             { $Type: 'UI.DataField', Value: EstimatedDuration,               Label: 'Est. Duration' },
             { $Type: 'UI.DataField', Value: DriverStatus,                    Label: 'Driver Status' },
-            { $Type: 'UI.DataField', Value: DriverTruck,                     Label: 'Truck' },
+            { $Type: 'UI.DataField', Value: DriverName,                      Label: 'Driver Name' },
+            { $Type: 'UI.DataField', Value: DriverTruck,                     Label: 'Truck No.' },
             { $Type: 'UI.DataField', Value: DriverMobile,                    Label: 'Driver Mobile' }
         ]
     }

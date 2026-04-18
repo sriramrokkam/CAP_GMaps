@@ -2,7 +2,7 @@ sap.ui.define([
     "sap/m/MessageToast",
     "sap/ui/core/Fragment",
     "sap/ui/model/json/JSONModel",
-    "sap/m/Item"
+    "sap/ui/core/Item"
 ], function (MessageToast, Fragment, JSONModel, Item) {
     "use strict";
 

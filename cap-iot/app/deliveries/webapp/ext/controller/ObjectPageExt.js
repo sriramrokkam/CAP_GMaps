@@ -83,6 +83,9 @@ sap.ui.define([
                             }).then(function (r) {
                                 if (!r.ok) throw new Error("Failed to close trip");
                                 MessageToast.show("Trip closed for delivery " + deliveryDoc);
+                                // Refresh OData model so DriverStatus updates in list and object page
+                                var oModel = oBindingContext.getModel();
+                                if (oModel && oModel.refresh) oModel.refresh();
                             }).catch(function (err) {
                                 MessageToast.show(err.message || "Failed to close trip");
                             });
