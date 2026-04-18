@@ -2,36 +2,43 @@ namespace iot_schema;
 using { managed } from '@sap/cds/common';
 
 /**
- * Driver assignment — created when dispatcher assigns a driver to a delivery.
- * MobileNumber is mandatory. TruckRegistration is optional (null for walking deliveries).
+ * Driver master data — auto-registered on first assignDriver call.
  */
-entity DriverAssignment : managed {
+entity Driver : managed {
     key ID                : UUID;
-        DeliveryDocument  : String(10)    @title: 'Delivery Document';
-        MobileNumber      : String(20)    @title: 'Mobile Number';      // mandatory
-        TruckRegistration : String(20)    @title: 'Truck Registration'; // nullable
-        AssignedAt        : DateTime      @title: 'Assigned At';
-        DeliveredAt       : DateTime      @title: 'Delivered At';       // set on confirmation
-        Status            : String(20) default 'ASSIGNED' @title: 'Status'; // ASSIGNED | IN_TRANSIT | DELIVERED
-        KafkaTopic        : String(100)   @title: 'Kafka Topic';        // 'gps-{DeliveryDocument}'
-        QRCodeUrl         : String(500)   @title: 'QR Code URL';        // '/tracking/index.html#<ID>'
-        QRCodeImage       : LargeString   @title: 'QR Code Image';      // base64 PNG data URL
-        EstimatedDistance : String(100)   @title: 'Est. Distance';      // e.g. "45 km"
-        EstimatedDuration : String(100)   @title: 'Est. Duration';      // e.g. "1 hr 12 min"
+        MobileNumber      : String(20)  @title: 'Mobile Number';
+        DriverName        : String(100) @title: 'Driver Name';
+        TruckRegistration : String(20)  @title: 'Default Truck';
+        LicenseNumber     : String(50)  @title: 'License Number';
+        IsActive          : Boolean default true @title: 'Active';
 }
 
 /**
- * GPS coordinate pings — one row per 30-second emission from driver mobile.
- * Latest row per assignment = current truck position.
+ * Driver assignment — one per delivery trip.
+ * GPS stored as start/current/end only — no history table.
  */
-entity GpsCoordinates : managed {
-    key ID            : UUID;
-        assignment_ID : UUID          @title: 'Assignment ID';   // FK to DriverAssignment
-        // Convenience association for server-side queries; mobile callers use assignment_ID directly
-        assignment    : Association to DriverAssignment on assignment.ID = assignment_ID;
-        Latitude      : Double        @title: 'Latitude';
-        Longitude     : Double        @title: 'Longitude';
-        Speed         : Double        @title: 'Speed (m/s)';     // nullable
-        Accuracy      : Double        @title: 'Accuracy (m)';    // nullable
-        RecordedAt    : DateTime      @title: 'Recorded At';
+entity DriverAssignment : managed {
+    key ID                : UUID;
+        driver            : Association to Driver;
+        DeliveryDocument  : String(10)    @title: 'Delivery Document';
+        MobileNumber      : String(20)    @title: 'Mobile Number';
+        DriverName        : String(100)   @title: 'Driver Name';
+        TruckRegistration : String(20)    @title: 'Truck Registration';
+        AssignedAt        : DateTime      @title: 'Assigned At';
+        DeliveredAt       : DateTime      @title: 'Delivered At';
+        Status            : String(20) default 'ASSIGNED' @title: 'Status';
+        EventTopic        : String(200)   @title: 'Event Mesh Topic';
+        QRCodeUrl         : String(500)   @title: 'QR Code URL';
+        QRCodeImage       : LargeString   @title: 'QR Code Image';
+        EstimatedDistance : String(100)   @title: 'Est. Distance';
+        EstimatedDuration : String(100)   @title: 'Est. Duration';
+        StartLat          : Double        @title: 'Start Latitude';
+        StartLng          : Double        @title: 'Start Longitude';
+        StartedAt         : DateTime      @title: 'Trip Started At';
+        CurrentLat        : Double        @title: 'Current Latitude';
+        CurrentLng        : Double        @title: 'Current Longitude';
+        CurrentSpeed      : Double        @title: 'Current Speed (m/s)';
+        LastGpsAt         : DateTime      @title: 'Last GPS At';
+        EndLat            : Double        @title: 'End Latitude';
+        EndLng            : Double        @title: 'End Longitude';
 }
