@@ -11,7 +11,6 @@
     "@sap/xssec": "^4",
     "axios": "^1",
     "express": "^4",
-    "kafkajs": "^2",
     "passport": "^0.7.0",
     "qrcode": "^1",
     "uuid": "^11"
@@ -72,19 +71,29 @@
         }
       },
       "[hybrid]": {
-        "db": { "kind": "hana" },
-        "auth": { "kind": "xsuaa" },
+        "db": {
+          "kind": "hana"
+        },
+        "auth": {
+          "kind": "xsuaa"
+        },
         "GoogleAPI-SR": {
           "kind": "rest",
-          "credentials": { "destination": "GoogleAPI-SR" }
+          "credentials": {
+            "destination": "GoogleAPI-SR"
+          }
         },
         "EWM-API": {
           "kind": "rest",
-          "credentials": { "destination": "EWM-API" }
+          "credentials": {
+            "destination": "EWM-API"
+          }
         },
         "BP-API": {
           "kind": "rest",
-          "credentials": { "destination": "EWM-API" }
+          "credentials": {
+            "destination": "EWM-API"
+          }
         }
       },
       "[production]": {
