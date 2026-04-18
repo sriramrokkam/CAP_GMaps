@@ -1,5 +1,5 @@
 const axios = require('axios');
-const cds = require('@sap/cds');
+const cds   = require('@sap/cds');
 
 function fmtDate(iso) {
     if (!iso) return '—';
@@ -14,101 +14,91 @@ async function reverseGeocode(lat, lng) {
     if (!lat || !lng) return null;
     try {
         const googleApi = await cds.connect.to('GoogleAPI-SR');
-        const res = await googleApi.send({
-            method: 'GET',
-            path: `/maps/api/geocode/json?latlng=${lat},${lng}`
-        });
+        const res = await googleApi.send({ method: 'GET', path: `/maps/api/geocode/json?latlng=${lat},${lng}` });
         const results = res && res.results;
         return results && results[0] ? results[0].formatted_address : null;
-    } catch (_) {
-        return null;
-    }
+    } catch (_) { return null; }
+}
+
+function adaptiveCard(body, actions) {
+    return {
+        type:        'message',
+        attachments: [{
+            contentType: 'application/vnd.microsoft.card.adaptive',
+            content: {
+                $schema: 'http://adaptivecards.io/schemas/adaptive-card.json',
+                type:    'AdaptiveCard',
+                version: '1.4',
+                body:    body,
+                actions: actions || []
+            }
+        }]
+    };
+}
+
+function factSet(facts) {
+    return { type: 'FactSet', facts: facts.map(([t, v]) => ({ title: t, value: v || '—' })) };
 }
 
 const MESSAGES = {
-    ASSIGNED: (d) => ({
-        "@type": "MessageCard",
-        "summary": `Driver Assigned — Delivery ${d.DeliveryDocument}`,
-        "themeColor": "0854A0",
-        "title": `🚚 Driver Assigned — Delivery ${d.DeliveryDocument}`,
-        "sections": [{
-            "facts": [
-                { "name": "Truck", "value": d.TruckRegistration || "—" },
-                { "name": "Driver Mobile", "value": d.MobileNumber || "—" },
-                { "name": "Delivery", "value": d.DeliveryDocument },
-                { "name": "Est. Distance", "value": d.EstimatedDistance || "—" },
-                { "name": "Est. Duration", "value": d.EstimatedDuration || "—" },
-                { "name": "Assigned At", "value": fmtDate(d.AssignedAt) }
-            ],
-            "text": d.EstimatedDuration
-                ? `Truck **${d.TruckRegistration || d.MobileNumber}** assigned to delivery **${d.DeliveryDocument}**. Will reach in **${d.EstimatedDuration}** (${d.EstimatedDistance || '—'}).`
-                : `Truck **${d.TruckRegistration || d.MobileNumber}** assigned to delivery **${d.DeliveryDocument}**.`
-        }]
-    }),
+    ASSIGNED: (d) => adaptiveCard([
+        { type: 'TextBlock', text: '🚚 Driver Assigned', weight: 'Bolder', size: 'Medium', color: 'Accent' },
+        { type: 'TextBlock', text: `Delivery **${d.DeliveryDocument}**`, wrap: true },
+        factSet([
+            ['Truck',          d.TruckRegistration],
+            ['Driver',         d.DriverName || d.MobileNumber],
+            ['Mobile',         d.MobileNumber],
+            ['Est. Distance',  d.EstimatedDistance],
+            ['Est. Duration',  d.EstimatedDuration],
+            ['Assigned At',    fmtDate(d.AssignedAt)]
+        ]),
+        d.TrackingUrl ? {
+            type: 'TextBlock',
+            text: `📱 **Customer tracking link:** [Track Delivery](${d.TrackingUrl})`,
+            wrap: true,
+            spacing: 'Medium'
+        } : null
+    ].filter(Boolean), [
+        d.TrackingUrl ? { type: 'Action.OpenUrl', title: 'Open Tracking Page', url: d.TrackingUrl } : null
+    ].filter(Boolean)),
 
-    LOCATION: (d) => ({
-        "@type": "MessageCard",
-        "summary": `Location Update — ${d.TruckRegistration || d.MobileNumber}`,
-        "themeColor": "E8581C",
-        "title": `📍 Location Update — ${d.TruckRegistration || d.MobileNumber}`,
-        "sections": [{
-            "facts": [
-                { "name": "Truck", "value": d.TruckRegistration || d.MobileNumber || "—" },
-                { "name": "Delivery", "value": d.DeliveryDocument || "—" },
-                { "name": "Address", "value": d.Address || "—" },
-                { "name": "Coordinates", "value": `${d.Latitude}, ${d.Longitude}` },
-                { "name": "Speed", "value": d.Speed ? `${(d.Speed * 3.6).toFixed(0)} km/h` : "—" },
-                { "name": "Recorded At", "value": fmtDate(d.RecordedAt) }
-            ],
-            "text": `Truck **${d.TruckRegistration || d.MobileNumber}** — Delivery **${d.DeliveryDocument}** — [View on Map](${mapsLink(d.Latitude, d.Longitude)})`
-        }],
-        "potentialAction": d.Latitude ? [{
-            "@type": "OpenUri",
-            "name": "View on Google Maps",
-            "targets": [{ "os": "default", "uri": mapsLink(d.Latitude, d.Longitude) }]
-        }] : []
-    }),
+    LOCATION: (d) => adaptiveCard([
+        { type: 'TextBlock', text: '📍 Location Update', weight: 'Bolder', size: 'Medium', color: 'Warning' },
+        { type: 'TextBlock', text: `**${d.TruckRegistration || d.MobileNumber}** — Delivery **${d.DeliveryDocument}**`, wrap: true },
+        factSet([
+            ['Address',      d.Address],
+            ['Coordinates',  `${d.Latitude}, ${d.Longitude}`],
+            ['Speed',        d.Speed ? `${(d.Speed * 3.6).toFixed(0)} km/h` : null],
+            ['Recorded At',  fmtDate(d.RecordedAt)]
+        ])
+    ], [
+        d.Latitude ? { type: 'Action.OpenUrl', title: 'View on Google Maps', url: mapsLink(d.Latitude, d.Longitude) } : null
+    ].filter(Boolean)),
 
-    DELIVERED: (d) => ({
-        "@type": "MessageCard",
-        "summary": `Delivery Complete — ${d.DeliveryDocument}`,
-        "themeColor": "2B7C2B",
-        "title": `✅ Delivery Complete — ${d.DeliveryDocument}`,
-        "sections": [{
-            "facts": [
-                { "name": "Delivery", "value": d.DeliveryDocument },
-                { "name": "Truck", "value": d.TruckRegistration || "—" },
-                { "name": "Driver Mobile", "value": d.MobileNumber || "—" },
-                { "name": "Customer (Ship-To)", "value": d.ShipToParty || "—" },
-                { "name": "Delivered At", "value": fmtDate(d.DeliveredAt) },
-                { "name": "Last GPS", "value": d.LastLat && d.LastLng ? `${d.LastLat}, ${d.LastLng}` : "—" }
-            ],
-            "text": `Delivery **${d.DeliveryDocument}** received by customer **${d.ShipToParty || '—'}**. Completed by **${d.TruckRegistration || d.MobileNumber}** at ${fmtDate(d.DeliveredAt)}.`
-        }],
-        "potentialAction": d.LastLat ? [{
-            "@type": "OpenUri",
-            "name": "View Delivery Location",
-            "targets": [{ "os": "default", "uri": mapsLink(d.LastLat, d.LastLng) }]
-        }] : []
-    })
+    DELIVERED: (d) => adaptiveCard([
+        { type: 'TextBlock', text: '✅ Delivery Complete', weight: 'Bolder', size: 'Medium', color: 'Good' },
+        { type: 'TextBlock', text: `Delivery **${d.DeliveryDocument}** received by customer **${d.ShipToParty || '—'}**`, wrap: true },
+        factSet([
+            ['Truck',         d.TruckRegistration],
+            ['Driver',        d.DriverName || d.MobileNumber],
+            ['Customer',      d.ShipToParty],
+            ['Delivered At',  fmtDate(d.DeliveredAt)],
+            ['Final GPS',     d.LastLat && d.LastLng ? `${d.LastLat}, ${d.LastLng}` : null]
+        ])
+    ], [
+        d.LastLat ? { type: 'Action.OpenUrl', title: 'View Delivery Location', url: mapsLink(d.LastLat, d.LastLng) } : null
+    ].filter(Boolean))
 };
 
 module.exports = {
     async post(event, data) {
         const url = process.env.TEAMS_WEBHOOK_URL;
-        if (!url) {
-            console.warn('TEAMS_WEBHOOK_URL not set — skipping Teams notification');
-            return;
-        }
+        if (!url) { console.warn('TEAMS_WEBHOOK_URL not set — skipping Teams notification'); return; }
         const cardFn = MESSAGES[event];
-        if (!cardFn) {
-            console.warn(`Unknown Teams event type: ${event}`);
-            return;
-        }
+        if (!cardFn) { console.warn(`Unknown Teams event type: ${event}`); return; }
         try {
-            if (event === 'LOCATION' && data.Latitude && data.Longitude) {
+            if (event === 'LOCATION' && data.Latitude && data.Longitude)
                 data.Address = await reverseGeocode(data.Latitude, data.Longitude);
-            }
             await axios.post(url, cardFn(data));
         } catch (err) {
             console.error('Teams notification failed:', err.message);
