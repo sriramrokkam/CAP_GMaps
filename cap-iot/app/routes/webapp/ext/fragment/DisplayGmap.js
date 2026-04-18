@@ -38,18 +38,29 @@ sap.ui.define([
                 console.log("Starting to load Google Maps script...");
 
                 const script = document.createElement("script");
-                script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&loading=async`;
+                script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}`;
                 script.async = true;
                 script.defer = true;
                 
                 script.onload = () => {
-                    console.log("Google Maps script loaded successfully");
-                    googleMapsScriptLoaded = true;
-                    googleMapsScriptLoading = false;
-                    resolve();
-                    // Resolve all queued callbacks
-                    loadCallbacks.forEach(cb => cb());
-                    loadCallbacks.length = 0;
+                    console.log("Google Maps script loaded, waiting for API init...");
+                    let attempts = 0;
+                    const check = () => {
+                        if (window.google && window.google.maps) {
+                            console.log("Google Maps API ready");
+                            googleMapsScriptLoaded = true;
+                            googleMapsScriptLoading = false;
+                            resolve();
+                            loadCallbacks.forEach(cb => cb());
+                            loadCallbacks.length = 0;
+                        } else if (attempts++ < 20) {
+                            setTimeout(check, 100);
+                        } else {
+                            googleMapsScriptLoading = false;
+                            reject(new Error("Google Maps API did not initialise in time"));
+                        }
+                    };
+                    check();
                 };
                 
                 script.onerror = (error) => {

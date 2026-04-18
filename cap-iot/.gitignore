@@ -10,3 +10,7 @@ mta_archives/
 # UI5 build artifacts
 app/*/dist/
 resources/*.zip
+
+# Playwright
+test-results/
+test/e2e/report/

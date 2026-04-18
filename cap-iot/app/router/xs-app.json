@@ -1,5 +1,5 @@
 {
-  "welcomeFile": "/",
+  "welcomeFile": "/ewmdeliveries/index.html",
   "authenticationMethod": "route",
   "sessionTimeout": 20,
   "routes": [
@@ -32,8 +32,9 @@
     },
     {
       "source": "^/(.*)$",
-      "localDir": ".",
-      "authenticationType": "none"
+      "target": "$1",
+      "service": "html5-apps-repo-rt",
+      "authenticationType": "xsuaa"
     }
   ]
 }

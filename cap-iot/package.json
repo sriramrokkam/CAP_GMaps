@@ -17,6 +17,7 @@
   },
   "devDependencies": {
     "@cap-js/sqlite": "^2",
+    "@playwright/test": "^1.59.1",
     "@sap/cds-dk": "^9",
     "cds-plugin-ui5": "^0.13.0",
     "mbt": "^1.2.29",
@@ -75,24 +76,32 @@
           "kind": "hana"
         },
         "auth": {
-          "kind": "xsuaa"
+          "kind": "mocked",
+          "users": {
+            "alice": {
+              "roles": [
+                "gmaps_user",
+                "Transport_Admin"
+              ]
+            }
+          }
         },
         "GoogleAPI-SR": {
           "kind": "rest",
           "credentials": {
-            "destination": "GoogleAPI-SR"
+            "url": "https://maps.googleapis.com"
           }
         },
         "EWM-API": {
           "kind": "rest",
           "credentials": {
-            "destination": "EWM-API"
+            "url": "https://sandbox.api.sap.com"
           }
         },
         "BP-API": {
           "kind": "rest",
           "credentials": {
-            "destination": "EWM-API"
+            "url": "https://sandbox.api.sap.com"
           }
         }
       },

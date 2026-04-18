@@ -79,6 +79,7 @@ modules:
           forwardAuthToken: true
       - name: gmaps-app-uaa
       - name: gmaps-app-destination
+      - name: gmaps-app-html5-runtime
     parameters:
       disk-quota: 256M
       memory: 256M
@@ -154,17 +155,19 @@ resources:
     requires:
       - name: srv-api
   - name: gmaps-app-repo-host
-    type: org.cloudfoundry.managed-service
+    type: org.cloudfoundry.existing-service
     parameters:
-      service: html5-apps-repo
-      service-name: gmaps-app-html5-service
-      service-plan: app-host
+      service-name: gmaps-app-html5-repo-host
   - name: gmaps-app-messaging
     type: org.cloudfoundry.managed-service
     parameters:
       service: enterprise-messaging
       service-plan: default
       path: ./event-mesh.json
+  - name: gmaps-app-html5-runtime
+    type: org.cloudfoundry.existing-service
+    parameters:
+      service-name: gmaps-app-html5-runtime
 parameters:
   deploy_mode: html5-repo
   enable-parallel-deployments: true

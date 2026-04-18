@@ -279,11 +279,14 @@ module.exports = class EwmService extends cds.ApplicationService {
                     modifiedAt:           now
                 }));
 
-                // Upsert into local DB (fire-and-forget)
+                // Upsert into local DB (fire-and-forget, SQLite may lock under concurrency — non-fatal)
                 if (rows.length > 0) {
-                    cds.run(UPSERT.into(DeliveryItems).entries(rows)).catch(err => {
-                        console.error('DeliveryItems upsert error:', err.message);
-                    });
+                    setTimeout(() => {
+                        cds.run(UPSERT.into(DeliveryItems).entries(rows)).catch(err => {
+                            if (!err.message.includes('database is locked'))
+                                console.error('DeliveryItems upsert error:', err.message);
+                        });
+                    }, 100);
                 }
 
                 return rows;
@@ -304,7 +307,7 @@ async function _resolveAddress(bpApi, businessPartner, sandboxKey) {
         const url = `/s4hanacloud/sap/opu/odata/sap/API_BUSINESS_PARTNER/A_BusinessPartner('${businessPartner}')/to_BusinessPartnerAddress?$top=1&$select=StreetName,HouseNumber,CityName,PostalCode,Region,Country`;
         const res = await bpApi.send({
             method: 'GET', path: url,
-            headers: { 'APIKey': sandboxKey }
+            headers: { 'APIKey': sandboxKey, 'Accept': 'application/json' }
         });
         const addr = (res?.d?.results || res?.value || [])[0];
         if (!addr) return null;

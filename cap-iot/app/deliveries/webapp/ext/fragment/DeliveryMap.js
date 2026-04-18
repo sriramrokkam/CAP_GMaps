@@ -403,14 +403,26 @@ sap.ui.define([
                 if (_mapsLoading) { _mapsQueue.push(resolve); return; }
                 _mapsLoading = true;
                 const s = document.createElement("script");
-                s.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=geometry&loading=async`;
+                s.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=geometry`;
                 s.async = true;
                 s.defer = true;
                 s.onload = () => {
-                    _mapsLoaded = true; _mapsLoading = false;
-                    resolve();
-                    _mapsQueue.forEach(cb => cb());
-                    _mapsQueue.length = 0;
+                    // Poll until google.maps is actually ready (script loads before Maps API initialises)
+                    let attempts = 0;
+                    const check = () => {
+                        if (window.google && window.google.maps) {
+                            _mapsLoaded = true; _mapsLoading = false;
+                            resolve();
+                            _mapsQueue.forEach(cb => cb());
+                            _mapsQueue.length = 0;
+                        } else if (attempts++ < 20) {
+                            setTimeout(check, 100);
+                        } else {
+                            _mapsLoading = false;
+                            reject(new Error("Google Maps API did not initialise in time"));
+                        }
+                    };
+                    check();
                 };
                 s.onerror = () => { _mapsLoading = false; reject(new Error("Failed to load Google Maps")); };
                 document.head.appendChild(s);
