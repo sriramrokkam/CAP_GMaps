@@ -213,6 +213,20 @@ module.exports = class TrackingService extends cds.ApplicationService {
             }
         });
 
+        this.on('getAssignment', async (req) => {
+            try {
+                const { assignmentId } = req.data;
+                const row = await SELECT.one.from(DriverAssignment)
+                    .columns('ID','DeliveryDocument','MobileNumber','DriverName','TruckRegistration','Status','AssignedAt','DeliveredAt','CurrentLat','CurrentLng','EventTopic')
+                    .where({ ID: assignmentId });
+                if (!row) return req.error(404, 'Assignment not found');
+                return row;
+            } catch (err) {
+                console.error('getAssignment error:', err.message);
+                return req.error(500, err.message);
+            }
+        });
+
         this.on('latestGps', async (req) => {
             try {
                 const { assignmentId } = req.data;

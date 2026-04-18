@@ -1,12 +1,12 @@
 using { iot_schema } from '../db/iot_schema';
 
-@requires: 'authenticated-user'
+@requires: 'any'
 service TrackingService {
 
-    @readonly
+    @restrict: [{ grant: 'READ', to: 'authenticated-user' }]
     entity DriverAssignment as projection on iot_schema.DriverAssignment;
 
-    @readonly
+    @restrict: [{ grant: 'READ', to: 'authenticated-user' }]
     entity Driver as projection on iot_schema.Driver;
 
     @restrict: [{ grant: 'EXECUTE', to: 'gmaps_user' }]
@@ -35,6 +35,23 @@ service TrackingService {
     action confirmDelivery(
         assignmentId : UUID
     ) returns Boolean;
+
+    @requires: 'any'
+    function getAssignment(
+        assignmentId : UUID
+    ) returns {
+        ID                : UUID;
+        DeliveryDocument  : String;
+        MobileNumber      : String;
+        DriverName        : String;
+        TruckRegistration : String;
+        Status            : String;
+        AssignedAt        : DateTime;
+        DeliveredAt       : DateTime;
+        CurrentLat        : Double;
+        CurrentLng        : Double;
+        EventTopic        : String;
+    };
 
     @requires: 'any'
     function latestGps(
