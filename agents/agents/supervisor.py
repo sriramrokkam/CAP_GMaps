@@ -1,6 +1,6 @@
 import json
 from langgraph.graph import StateGraph, END, START
-from langchain_core.messages import HumanMessage, AIMessage
+from langchain_core.messages import AIMessage
 from state import AgentState, ActionProposal
 from agents.delivery_agent import build_delivery_agent
 from agents.driver_agent import build_driver_agent
