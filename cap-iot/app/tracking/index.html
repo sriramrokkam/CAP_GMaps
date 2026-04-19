@@ -345,7 +345,7 @@
                         return;
                     }
 
-                    fetch("/odata/v4/tracking/getAssignment(assignmentId=" + _assignmentId + ")", {.then(function (r) {
+                    fetch("/odata/v4/tracking/getAssignment(assignmentId=" + _assignmentId + ")").then(function (r) {
                         if (!r.ok) throw new Error(r.status);
                         return r.json();
                     }).then(function (a) {
