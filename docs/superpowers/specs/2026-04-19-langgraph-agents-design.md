@@ -199,8 +199,41 @@ Alert deduplication: MonitorAgent tracks last-alerted state in-process dict keye
 
 ### `GET /health`
 ```json
-{ "status": "ok", "monitor": "running" }
+{
+  "status": "ok" | "degraded" | "error",
+  "timestamp": "2026-04-19T10:00:00Z",
+  "connections": {
+    "aicore": "ok" | "error",
+    "xsuaa": "ok" | "error",
+    "cap_odata": "ok" | "error",
+    "teams_webhook": "ok" | "error"
+  },
+  "agents": {
+    "supervisor": "ready",
+    "delivery_agent": "ready",
+    "driver_agent": "ready",
+    "route_agent": "ready"
+  },
+  "monitor": {
+    "status": "running" | "stopped",
+    "last_run": "2026-04-19T09:55:00Z",
+    "next_run": "2026-04-19T10:00:00Z",
+    "checks": {
+      "unassigned_deliveries": "ok" | "error",
+      "idle_drivers": "ok" | "error",
+      "batch_opportunities": "ok" | "error"
+    }
+  },
+  "tools": {
+    "list_open_deliveries": "ok" | "error",
+    "list_drivers": "ok" | "error",
+    "get_live_location": "ok" | "error",
+    "get_route_for_delivery": "ok" | "error"
+  }
+}
 ```
+
+Overall `status` is `"ok"` only if all connections are `"ok"`. Any connection failure → `"degraded"`. Unhandled exception during health check → `"error"`. Each connection is verified with a lightweight probe (token fetch for XSUAA/AI Core, `$top=1` OData call for CAP, HTTP HEAD for Teams webhook).
 
 ---
 
