@@ -4,6 +4,20 @@
   "sessionTimeout": 20,
   "routes": [
     {
+      "source": "^/odata/v4/ewm/OutboundDeliveries(.*)$",
+      "target": "/odata/v4/ewm/OutboundDeliveries$1",
+      "destination": "srv-api",
+      "authenticationType": "none",
+      "csrfProtection": false
+    },
+    {
+      "source": "^/odata/v4/gmaps/RouteDirections(.*)$",
+      "target": "/odata/v4/gmaps/RouteDirections$1",
+      "destination": "srv-api",
+      "authenticationType": "none",
+      "csrfProtection": false
+    },
+    {
       "source": "^/odata/v4/gmaps/(.*)$",
       "target": "/odata/v4/gmaps/$1",
       "destination": "srv-api",

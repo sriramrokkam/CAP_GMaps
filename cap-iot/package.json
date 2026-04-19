@@ -124,7 +124,7 @@
         "BP-API": {
           "kind": "rest",
           "credentials": {
-            "destination": "BP-API"
+            "destination": "EWM-API"
           }
         },
         "auth": {
