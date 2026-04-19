@@ -1,0 +1,13 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]
+  - generic [ref=e5]:
+    - heading "Welcome to SAP-Build-Training!" [level=2] [ref=e6]
+    - generic [ref=e9]:
+      - paragraph [ref=e10]: "or sign in with:"
+      - link "aibmdnh6a.accounts.ondemand.com" [ref=e13] [cursor=pointer]:
+        - /url: https://aibmdnh6a.accounts.ondemand.com/oauth2/authorize?client_id=2302cede-b1ac-4f2c-b99f-f53b458aa6f5&response_type=code&redirect_uri=https%3A%2F%2Fsap-build-training-hcd2uswp.authentication.us10.hana.ondemand.com%2Flogin%2Fcallback%2Fsap.custom&state=eGPGSxryUC&code_challenge=LYKmXyYKF0YLggxTOy4QsrxwbqsRW3N_0rZyNVIgNRk&code_challenge_method=S256&scope=email+openid+profile&nonce=PBgTRZD-U3zm
+      - link "Default Identity Provider" [ref=e16] [cursor=pointer]:
+        - /url: https://accounts.sap.com/oauth2/authorize?client_id=8c960bdf-f522-45b6-80e1-b6e0c3fc4785&response_type=code&redirect_uri=https%3A%2F%2Fsap-build-training-hcd2uswp.authentication.us10.hana.ondemand.com%2Flogin%2Fcallback%2Fsap.default&state=aVZmv6XX1I&code_challenge=TX81REgOkqk4yiTnA6p60DQUkN3dfDppBlDLdwh6uco&code_challenge_method=S256&scope=email+openid+profile&nonce=A-ydA9RO_r3V
+  - generic [ref=e18]:
+    - img [ref=e20]
+    - generic [ref=e21]: Copyright © 2026 SAP SE. All rights reserved.
