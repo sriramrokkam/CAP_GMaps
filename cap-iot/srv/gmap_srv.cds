@@ -1,6 +1,6 @@
 using { gmaps_schema } from '../db/gmaps_schema';
 
-@requires: 'authenticated-user'
+@requires: 'any'
 service GmapsService {
 
     @odata.draft.enabled
@@ -11,6 +11,7 @@ service GmapsService {
     
     @readonly
     @restrict: [
+        { grant: 'READ', to: 'any' },
         { grant: 'READ', to: 'gmaps_user' }
     ]
     entity RouteDirections as projection on gmaps_schema.RouteDirections;
