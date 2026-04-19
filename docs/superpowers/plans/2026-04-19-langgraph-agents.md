@@ -133,6 +133,11 @@ class Settings(BaseSettings):
 
     teams_webhook_url: str
 
+    # LangSmith tracing (optional — PoC observability)
+    langchain_tracing_v2: str = "false"
+    langchain_api_key: str = ""
+    langchain_project: str = "gmaps-dispatch-agents"
+
     monitor_poll_interval_sec: int = 300
     unassigned_threshold_min: int = 30
     idle_threshold_min: int = 20
@@ -150,23 +155,36 @@ Expected: `PASSED`
 - [ ] **Step 7: Write `agents/.env.example`**
 
 ```env
-# AI Core (SAP BTP)
+# ── AI Core (get from BTP subaccount → AI Core → service key) ──
 AICORE_AUTH_URL=https://<subaccount>.authentication.us10.hana.ondemand.com/oauth/token
 AICORE_CLIENT_ID=
 AICORE_CLIENT_SECRET=
 AICORE_BASE_URL=https://api.ai.prod.us-east-1.aws.ml.hana.ondemand.com
-AICORE_DEPLOYMENT_ID=
+AICORE_DEPLOYMENT_ID=          # Claude Sonnet 4.6 deployment ID
 
-# CAP OData base URL
+# ── CAP OData base (gmaps-app-srv URL) ──
 CAP_BASE_URL=https://s4hanad-s-sap-build-training-hcd2uswp-dev-gmaps-app-srv.cfapps.us10.hana.ondemand.com
 
-# XSUAA client credentials (for agent → CAP auth)
-XSUAA_URL=https://<subaccount>.authentication.us10.hana.ondemand.com
+# ── XSUAA — reuse gmaps-app-xsuaa-service (client credentials) ──
+# Get values: cf service-key gmaps-app-xsuaa-service gmaps-app-xsuaa-key
+# Fields: url → XSUAA_URL, clientid → XSUAA_CLIENT_ID, clientsecret → XSUAA_CLIENT_SECRET
+XSUAA_URL=
 XSUAA_CLIENT_ID=
 XSUAA_CLIENT_SECRET=
 
-# Teams Incoming Webhook
+# ── Teams Incoming Webhook ──
 TEAMS_WEBHOOK_URL=
+
+# ── LangSmith tracing (PoC observability — get key from smith.langchain.com) ──
+LANGCHAIN_TRACING_V2=true
+LANGCHAIN_API_KEY=
+LANGCHAIN_PROJECT=gmaps-dispatch-agents
+
+# ── Monitor tuning (optional, defaults shown) ──
+MONITOR_POLL_INTERVAL_SEC=300
+UNASSIGNED_THRESHOLD_MIN=30
+IDLE_THRESHOLD_MIN=20
+```
 
 # Monitor tuning (optional, defaults shown)
 MONITOR_POLL_INTERVAL_SEC=300
@@ -1330,19 +1348,27 @@ applications:
     memory: 512M
     instances: 1
     command: uvicorn main:app --host 0.0.0.0 --port $PORT
+    # Dev: set all vars in .env locally — no service bindings needed
+    # Prod: bind existing CF services below and set remaining vars as CF env vars
     env:
+      CAP_BASE_URL: https://s4hanad-s-sap-build-training-hcd2uswp-dev-gmaps-app-srv.cfapps.us10.hana.ondemand.com
       AICORE_AUTH_URL: ((AICORE_AUTH_URL))
       AICORE_CLIENT_ID: ((AICORE_CLIENT_ID))
       AICORE_CLIENT_SECRET: ((AICORE_CLIENT_SECRET))
       AICORE_BASE_URL: ((AICORE_BASE_URL))
       AICORE_DEPLOYMENT_ID: ((AICORE_DEPLOYMENT_ID))
-      CAP_BASE_URL: https://s4hanad-s-sap-build-training-hcd2uswp-dev-gmaps-app-srv.cfapps.us10.hana.ondemand.com
       XSUAA_URL: ((XSUAA_URL))
       XSUAA_CLIENT_ID: ((XSUAA_CLIENT_ID))
       XSUAA_CLIENT_SECRET: ((XSUAA_CLIENT_SECRET))
       TEAMS_WEBHOOK_URL: ((TEAMS_WEBHOOK_URL))
+      LANGCHAIN_TRACING_V2: "true"
+      LANGCHAIN_API_KEY: ((LANGCHAIN_API_KEY))
+      LANGCHAIN_PROJECT: gmaps-dispatch-agents
     services:
-      - gmaps-xsuaa
+      # Reuse existing gmaps CF services — same XSUAA trust, same destinations
+      - gmaps-app-xsuaa-service
+      - gmaps-app-destination
+      - aicore
 ```
 
 - [ ] **Step 2: Write `agents/mta.yaml`**
@@ -1364,13 +1390,16 @@ modules:
     properties:
       CAP_BASE_URL: https://s4hanad-s-sap-build-training-hcd2uswp-dev-gmaps-app-srv.cfapps.us10.hana.ondemand.com
     requires:
-      - name: gmaps-xsuaa
-      - name: gmaps-destination
+      - name: gmaps-app-xsuaa-service   # reuse — shared JWT trust with CAP srv
+      - name: gmaps-app-destination     # reuse — GoogleAPI-SR, EWM-API, srv-api already configured
+      - name: aicore                    # reuse — existing AI Core instance
 
 resources:
-  - name: gmaps-xsuaa
+  - name: gmaps-app-xsuaa-service
     type: org.cloudfoundry.existing-service
-  - name: gmaps-destination
+  - name: gmaps-app-destination
+    type: org.cloudfoundry.existing-service
+  - name: aicore
     type: org.cloudfoundry.existing-service
 ```
 
@@ -1394,7 +1423,19 @@ git commit -m "feat(agents): add CF manifest and mta.yaml for deployment"
 
 ## Task 12: Deploy to CF and verify
 
-- [ ] **Step 1: Fill in `.env` with real values** (AI Core, XSUAA, Teams webhook — from BTP subaccount)
+- [ ] **Step 1: Fill `.env` with real values**
+
+```bash
+# Get XSUAA credentials from existing gmaps service key
+cf service-key gmaps-app-xsuaa-service gmaps-app-xsuaa-key
+# Copy: url → XSUAA_URL, clientid → XSUAA_CLIENT_ID, clientsecret → XSUAA_CLIENT_SECRET
+
+# Get AI Core credentials from existing aicore service key
+cf service-keys aicore
+# Create one if needed: cf create-service-key aicore gmaps-agents-aicore-key
+cf service-key aicore gmaps-agents-aicore-key
+# Copy: serviceurls.AI_API_URL → AICORE_BASE_URL, credentials.clientid/secret/url → AICORE_*
+```
 
 - [ ] **Step 2: Push to CF**
 

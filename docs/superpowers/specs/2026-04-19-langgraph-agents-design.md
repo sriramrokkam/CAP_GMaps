@@ -46,35 +46,52 @@ Standalone repo/folder at project root — deployed independently from `cap-iot`
 | Component | Detail |
 |-----------|--------|
 | **LLM** | SAP AI Core — Claude Sonnet 4.6 via `generative-ai-hub-sdk` (Python) |
-| **Auth (agent → CAP OData)** | XSUAA client credentials flow; FastAPI fetches token on startup, refreshes before expiry |
+| **Auth (agent → CAP OData)** | Reuse `gmaps-app-xsuaa-service` (client credentials); same XSUAA instance CAP srv already trusts — no new XSUAA needed |
 | **Auth (Teams/Joule → agent)** | Bearer JWT passed in `Authorization` header on `/chat`; forwarded to CAP OData calls |
 | **Agent memory/state** | LangGraph `MemorySaver` (in-process, keyed by `thread_id`); swap to `SqliteSaver` or HANA-backed saver post-PoC |
 | **Background scheduler** | APScheduler `BackgroundScheduler`, 5-minute interval, started on FastAPI `lifespan` |
-| **Config** | `.env` (dev) / CF environment variables (prod) — see Config section |
-| **Destination (CF)** | Existing BTP Destination Service bound to `agents` CF module for AI Core + OData base URL |
+| **Tracing (PoC)** | LangSmith — `LANGCHAIN_TRACING_V2=true` + `LANGCHAIN_API_KEY` in `.env`; zero code changes |
+| **Config — Dev** | `.env` file only — all vars local, no BTP service bindings needed for development |
+| **Config — Prod (CF)** | Bind existing services: `gmaps-app-xsuaa-service`, `gmaps-app-destination`, `aicore` |
+
+### CF Services to Reuse (Prod only — not needed for dev)
+
+| CF Service | Purpose for Agents |
+|-----------|-------------------|
+| `gmaps-app-xsuaa-service` | XSUAA — bind so agents app shares same JWT trust with CAP srv |
+| `gmaps-app-destination` | Has `GoogleAPI-SR`, `EWM-API`, `srv-api` destinations pre-configured |
+| `aicore` | Existing AI Core instance — create new service key for agents |
 
 ---
 
 ## Config / Environment Variables
 
+All vars live in `.env` for local dev. In CF production they are set as environment variables or resolved from bound services.
+
 ```env
-# AI Core
-AICORE_AUTH_URL=
+# AI Core (SAP BTP)
+AICORE_AUTH_URL=https://<subaccount>.authentication.us10.hana.ondemand.com/oauth/token
 AICORE_CLIENT_ID=
 AICORE_CLIENT_SECRET=
-AICORE_BASE_URL=
-AICORE_DEPLOYMENT_ID=          # Claude Sonnet 4.6 deployment
+AICORE_BASE_URL=https://api.ai.prod.us-east-1.aws.ml.hana.ondemand.com
+AICORE_DEPLOYMENT_ID=          # Claude Sonnet 4.6 deployment ID
 
-# CAP OData base
-CAP_BASE_URL=https://<srv>.cfapps.us10.hana.ondemand.com
+# CAP OData base (gmaps-app-srv CF URL)
+CAP_BASE_URL=https://s4hanad-s-sap-build-training-hcd2uswp-dev-gmaps-app-srv.cfapps.us10.hana.ondemand.com
 
-# XSUAA (client credentials for agent→CAP)
+# XSUAA — reuse gmaps-app-xsuaa-service credentials (client credentials grant)
+# Get from: cf service-key gmaps-app-xsuaa-service gmaps-app-xsuaa-key
 XSUAA_URL=
 XSUAA_CLIENT_ID=
 XSUAA_CLIENT_SECRET=
 
 # Teams
-TEAMS_WEBHOOK_URL=             # existing channel webhook
+TEAMS_WEBHOOK_URL=             # existing SAP Teams channel Incoming Webhook
+
+# LangSmith tracing (PoC observability)
+LANGCHAIN_TRACING_V2=true
+LANGCHAIN_API_KEY=             # from smith.langchain.com
+LANGCHAIN_PROJECT=gmaps-dispatch-agents
 
 # Monitor tuning
 MONITOR_POLL_INTERVAL_SEC=300  # default 5 min
