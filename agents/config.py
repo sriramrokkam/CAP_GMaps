@@ -1,3 +1,4 @@
+from functools import lru_cache
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
@@ -17,7 +18,7 @@ class Settings(BaseSettings):
 
     teams_webhook_url: str
 
-    langchain_tracing_v2: str = "false"
+    langchain_tracing_v2: bool = False
     langchain_api_key: str = ""
     langchain_project: str = "gmaps-dispatch-agents"
 
@@ -25,4 +26,10 @@ class Settings(BaseSettings):
     unassigned_threshold_min: int = 30
     idle_threshold_min: int = 20
 
-settings = Settings()
+
+@lru_cache
+def get_settings() -> Settings:
+    return Settings()
+
+
+settings = get_settings()
