@@ -19,6 +19,9 @@ target/
 # Test files
 test-*.html
 
+# Playwright MCP temp artifacts
+.playwright-mcp/
+
 # Web IDE, App Studio
 .che/
 .gen/
