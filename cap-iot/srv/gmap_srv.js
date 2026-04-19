@@ -32,27 +32,12 @@ module.exports = class GmapsService extends cds.ApplicationService {
             try {
                 console.log(`Fetching directions from "${from}" to "${to}"...`);
 
-                // In production: API key comes from Destination service (automatic)
-                // In development: API key from .env file
-                const apiKey = process.env.GOOGLE_MAPS_API_KEY;
-                
-                if (!apiKey) {
-                    console.error('GOOGLE_MAPS_API_KEY not found in environment');
-                    return req.error(500, 'API key configuration missing');
-                }
+                // API key is injected by BTP Destination (URL.query.key Additional Property on GoogleAPI-SR).
+                // In local dev, the direct URL in package.json is used with the key from .env via the same dest config.
+                const queryParams = new URLSearchParams({ origin: from, destination: to });
+                // Append env key only in development (destination handles it in production)
+                if (process.env.GOOGLE_MAPS_API_KEY) queryParams.set('key', process.env.GOOGLE_MAPS_API_KEY);
 
-                console.log('Calling Google Maps API via destination service');
-
-                // Build query string for Google Maps API
-                const queryParams = new URLSearchParams({
-                    origin: from,
-                    destination: to,
-                    key: apiKey
-                });
-
-                // Call Google Maps Directions API via destination
-                // In production: destination injects credentials automatically
-                // In development: uses direct URL from package.json
                 const response = await googleMapsService.send({
                     method: 'GET',
                     path: `/maps/api/directions/json?${queryParams.toString()}`

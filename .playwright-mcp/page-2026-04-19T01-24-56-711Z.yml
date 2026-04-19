@@ -1,0 +1,325 @@
+- generic [ref=e1]:
+  - generic:
+    - status
+    - status
+    - img [ref=e42]
+    - img [ref=e336]
+  - generic [ref=e49]:
+    - region "First column" [ref=e50]:
+      - article [ref=e56]:
+        - generic [ref=e58]:
+          - button "Standard" [expanded]
+          - generic [ref=e65]:
+            - heading "Standard" [level=2] [ref=e67]
+            - generic [ref=e371]: "*"
+            - button "Modified view Standard." [ref=e372] [cursor=pointer]:
+              - generic [ref=e71]: 
+        - generic [ref=e79]:
+          - region "Expanded header" [ref=e81]:
+            - generic [ref=e86]:
+              - generic [ref=e96]:
+                - searchbox [ref=e97]
+                - generic [ref=e98] [cursor=pointer]: 
+              - generic [ref=e100]:
+                - generic [ref=e103]:
+                  - generic [ref=e104]: Delivery Document
+                  - generic [ref=e105]: ":"
+                - generic [ref=e109]:
+                  - listbox "Tokeniser" [ref=e373]:
+                    - option "=80000007" [ref=e376]:
+                      - generic: =80000007
+                      - generic [ref=e377] [cursor=pointer]: 
+                  - textbox "Delivery Document" [ref=e110]
+                  - button "Show Value Help" [ref=e112] [cursor=pointer]: 
+              - generic [ref=e114]:
+                - generic [ref=e117]:
+                  - generic [ref=e118]: Route
+                  - generic [ref=e119]: ":"
+                - generic [ref=e123]:
+                  - textbox "Route" [ref=e124]
+                  - button "Show Value Help" [ref=e126] [cursor=pointer]: 
+              - generic [ref=e128]:
+                - generic [ref=e131]:
+                  - generic [ref=e132]: Sales Organization
+                  - generic [ref=e133]: ":"
+                - generic [ref=e137]:
+                  - textbox "Sales Organization" [ref=e138]
+                  - button "Show Value Help" [ref=e140] [cursor=pointer]: 
+              - generic [ref=e142]:
+                - generic [ref=e145]:
+                  - generic [ref=e146]: Ship-To Party
+                  - generic [ref=e147]: ":"
+                - generic [ref=e151]:
+                  - textbox "Ship-To Party" [ref=e152]
+                  - button "Show Value Help" [ref=e154] [cursor=pointer]: 
+              - generic [ref=e156]:
+                - generic [ref=e159]:
+                  - generic [ref=e160]: Shipping Point
+                  - generic [ref=e161]: ":"
+                - generic [ref=e165]:
+                  - textbox "Shipping Point" [ref=e166]
+                  - button "Show Value Help" [ref=e168] [cursor=pointer]: 
+              - generic [ref=e170]:
+                - generic [ref=e173]:
+                  - generic [ref=e174]: Driver Status
+                  - generic [ref=e175]: ":"
+                - generic [ref=e179]:
+                  - textbox "Driver Status" [ref=e180]
+                  - button "Show Value Help" [ref=e182] [cursor=pointer]: 
+              - generic [ref=e184]:
+                - generic [ref=e187]:
+                  - generic [ref=e188]: Goods Mvt Status
+                  - generic [ref=e189]: ":"
+                - generic [ref=e193]:
+                  - textbox "Goods Mvt Status" [ref=e194]
+                  - button "Show Value Help" [ref=e196] [cursor=pointer]: 
+              - generic [ref=e198]:
+                - generic [ref=e201]:
+                  - generic [ref=e202]: Billing Status
+                  - generic [ref=e203]: ":"
+                - generic [ref=e207]:
+                  - textbox "Billing Status" [ref=e208]
+                  - button "Show Value Help" [ref=e210] [cursor=pointer]: 
+              - generic [ref=e212]:
+                - generic [ref=e215]:
+                  - generic [ref=e216]: Delivery Date
+                  - generic [ref=e217]: ":"
+                - generic [ref=e221]:
+                  - textbox "Delivery Date" [ref=e222]
+                  - button "Show Value Help" [ref=e224] [cursor=pointer]: 
+              - generic [ref=e229]:
+                - button "Go" [ref=e231] [cursor=pointer]:
+                  - generic [ref=e233]: Go
+                - button "Adapt Filters (1)" [ref=e379] [cursor=pointer]:
+                  - generic [ref=e237]: Adapt Filters (1)
+            - button "Collapse Header" [ref=e238] [cursor=pointer]:
+              - generic [ref=e240]: 
+          - generic [ref=e247]:
+            - generic [ref=e728]:
+              - heading "Outbound Deliveries (1)" [level=3] [ref=e381]
+              - button "Additional Options" [ref=e414] [cursor=pointer]:
+                - generic [ref=e416]: 
+            - grid "Outbound Deliveries (1)" [ref=e391]:
+              - rowgroup [ref=e271]:
+                - row "Selection Delivery Route Row Action" [ref=e417]:
+                  - columnheader "Selection" [ref=e273]:
+                    - checkbox "Select All" [ref=e274]
+                  - columnheader "Delivery" [ref=e276]:
+                    - generic "Delivery" [ref=e280]:
+                      - generic [ref=e282]: Delivery
+                  - columnheader "Route" [ref=e283]:
+                    - generic "Route" [ref=e287]:
+                      - generic [ref=e289]: Route
+                  - columnheader "Row Action" [ref=e393]:
+                    - generic: Row Action
+              - rowgroup [ref=e325]:
+                - row "Item Selection 80000007 Navigation" [ref=e418] [cursor=pointer]:
+                  - gridcell "Item Selection" [ref=e395]:
+                    - checkbox "Item Selection" [ref=e396]
+                  - gridcell "80000007" [ref=e398]:
+                    - generic [ref=e399]: "80000007"
+                  - gridcell [ref=e400]
+                  - gridcell "Navigation" [ref=e411]:
+                    - img "Navigation" [ref=e412]: 
+    - separator "Press ARROW keys to move" [ref=e420]:
+      - generic [ref=e423]: 
+    - region "Middle column" [ref=e425]:
+      - main "Object details Object page" [ref=e431]:
+        - banner "Object header area Object page header" [ref=e432]:
+          - generic [ref=e433]:
+            - toolbar "Header actions" [ref=e437]:
+              - button "Enter Full Screen" [ref=e438] [cursor=pointer]:
+                - generic [ref=e440]: 
+              - button "Close" [ref=e441] [cursor=pointer]:
+                - generic [ref=e443]: 
+            - generic [ref=e445]:
+              - heading "80000007" [level=2] [ref=e450]
+              - toolbar "Header actions" [ref=e452]:
+                - button "Delete" [ref=e729] [cursor=pointer]:
+                  - generic [ref=e731]: Delete
+                - button "Assign Driver" [ref=e732] [cursor=pointer]:
+                  - generic [ref=e734]: Assign Driver
+                - button "Show QR" [ref=e735] [cursor=pointer]:
+                  - generic [ref=e737]: Show QR
+                - button "Close Trip" [ref=e738] [cursor=pointer]:
+                  - generic [ref=e740]: Close Trip
+                - button "Share (Ctrl+Shift+S)" [ref=e742] [cursor=pointer]:
+                  - generic [ref=e743]:
+                    - generic [ref=e744]: 
+                    - text: 
+          - navigation [ref=e745]:
+            - tablist [ref=e473]:
+              - tab "Delivery Details" [selected] [ref=e474] [cursor=pointer]:
+                - generic [ref=e477]: Delivery Details
+              - tab "Delivery Items" [ref=e479] [cursor=pointer]:
+                - generic [ref=e482]: Delivery Items
+              - tab "Route & Map" [ref=e484] [cursor=pointer]:
+                - generic [ref=e487]: Route & Map
+        - generic [ref=e489]:
+          - region "Delivery Details" [ref=e490]:
+            - generic [ref=e494]:
+              - heading "Delivery Details" [level=3] [ref=e497]
+              - form "Delivery Details form" [ref=e504]:
+                - generic [ref=e507]:
+                  - generic [ref=e508]:
+                    - term [ref=e509]:
+                      - generic [ref=e511]:
+                        - generic [ref=e512]: Delivery Document
+                        - generic [ref=e513]: ":"
+                    - definition [ref=e514]:
+                      - generic [ref=e516]: "80000007"
+                  - generic [ref=e517]:
+                    - term [ref=e518]:
+                      - generic [ref=e520]:
+                        - generic [ref=e521]: Delivery Route
+                        - generic [ref=e522]: ":"
+                    - definition [ref=e523]:
+                      - generic [ref=e526]:
+                        - text: –
+                        - generic: Empty Value
+                  - generic [ref=e527]:
+                    - term [ref=e528]:
+                      - generic [ref=e530]:
+                        - generic [ref=e531]: Shipping Point
+                        - generic [ref=e532]: ":"
+                    - definition [ref=e533]:
+                      - generic [ref=e535]: "1710"
+                  - generic [ref=e536]:
+                    - term [ref=e537]:
+                      - generic [ref=e539]:
+                        - generic [ref=e540]: Ship-To Party
+                        - generic [ref=e541]: ":"
+                    - definition [ref=e542]:
+                      - generic [ref=e544]: USCU-CUS02
+                  - generic [ref=e545]:
+                    - term [ref=e546]:
+                      - generic [ref=e548]:
+                        - generic [ref=e549]: Sales Organization
+                        - generic [ref=e550]: ":"
+                    - definition [ref=e551]:
+                      - generic [ref=e553]: "1710"
+                  - generic [ref=e554]:
+                    - term [ref=e555]:
+                      - generic [ref=e557]:
+                        - generic [ref=e558]: Shipping Condition
+                        - generic [ref=e559]: ":"
+                    - definition [ref=e560]:
+                      - generic [ref=e562]: "01"
+                  - generic [ref=e563]:
+                    - term [ref=e564]:
+                      - generic [ref=e566]:
+                        - generic [ref=e567]: Goods Movement Status
+                        - generic [ref=e568]: ":"
+                    - definition [ref=e569]:
+                      - generic [ref=e571]: C
+                  - generic [ref=e572]:
+                    - term [ref=e573]:
+                      - generic [ref=e575]:
+                        - generic [ref=e576]: Billing Status
+                        - generic [ref=e577]: ":"
+                    - definition [ref=e578]:
+                      - generic [ref=e580]: C
+                  - generic [ref=e581]:
+                    - term [ref=e582]:
+                      - generic [ref=e584]:
+                        - generic [ref=e585]: Delivery Date
+                        - generic [ref=e586]: ":"
+                    - definition [ref=e587]:
+                      - generic [ref=e589]: 8 Sept 2016, 05:30:00
+                  - generic [ref=e590]:
+                    - term [ref=e591]:
+                      - generic [ref=e593]:
+                        - generic [ref=e594]: Gross Weight
+                        - generic [ref=e595]: ":"
+                    - definition [ref=e596]:
+                      - generic [ref=e598]: 13,700.000
+                  - generic [ref=e599]:
+                    - term [ref=e600]:
+                      - generic [ref=e602]:
+                        - generic [ref=e603]: Net Weight
+                        - generic [ref=e604]: ":"
+                    - definition [ref=e605]:
+                      - generic [ref=e607]: 10,000.000
+                  - generic [ref=e608]:
+                    - term [ref=e609]:
+                      - generic [ref=e611]:
+                        - generic [ref=e612]: Est. Distance
+                        - generic [ref=e613]: ":"
+                    - definition [ref=e614]:
+                      - generic [ref=e617]:
+                        - text: –
+                        - generic: Empty Value
+                  - generic [ref=e618]:
+                    - term [ref=e619]:
+                      - generic [ref=e621]:
+                        - generic [ref=e622]: Est. Duration
+                        - generic [ref=e623]: ":"
+                    - definition [ref=e624]:
+                      - generic [ref=e627]:
+                        - text: –
+                        - generic: Empty Value
+                  - generic [ref=e628]:
+                    - term [ref=e629]:
+                      - generic [ref=e631]:
+                        - generic [ref=e632]: Driver Status
+                        - generic [ref=e633]: ":"
+                    - definition [ref=e634]:
+                      - generic [ref=e636]: ASSIGNED
+                  - generic [ref=e637]:
+                    - term [ref=e638]:
+                      - generic [ref=e640]:
+                        - generic [ref=e641]: Driver Name
+                        - generic [ref=e642]: ":"
+                    - definition [ref=e643]:
+                      - generic [ref=e645]: Sriram Rokkam
+                  - generic [ref=e646]:
+                    - term [ref=e647]:
+                      - generic [ref=e649]:
+                        - generic [ref=e650]: Truck No.
+                        - generic [ref=e651]: ":"
+                    - definition [ref=e652]:
+                      - generic [ref=e654]: KA01NA6776
+                  - generic [ref=e655]:
+                    - term [ref=e656]:
+                      - generic [ref=e658]:
+                        - generic [ref=e659]: Driver Mobile
+                        - generic [ref=e660]: ":"
+                    - definition [ref=e661]:
+                      - generic [ref=e663]: "+916309693333"
+          - region "Delivery Items" [ref=e664]:
+            - generic [ref=e668]:
+              - heading "Delivery Items" [level=3] [ref=e671]
+              - note "Message Strip Error Closable Internal Server Error" [ref=e679]:
+                - generic: Message Strip Error Closable
+                - generic [ref=e680]: Internal Server Error
+                - button "Error Message Strip Close" [ref=e681] [cursor=pointer]:
+                  - generic [ref=e683]: 
+          - region "Route & Map" [active] [ref=e684]:
+            - generic [ref=e688]:
+              - heading "Route & Map" [level=3] [ref=e691]
+              - generic [ref=e697]:
+                - generic [ref=e698]:
+                  - generic [ref=e701]:
+                    - generic [ref=e702]: "Driver:"
+                    - generic [ref=e704]: "+916309693333"
+                    - generic: Object Status
+                    - generic: Informative entry
+                  - generic [ref=e706]:
+                    - generic [ref=e707]: "Truck:"
+                    - generic [ref=e709]: KA01NA6776
+                    - generic: Object Status
+                  - generic [ref=e711]:
+                    - generic [ref=e712]: "Status:"
+                    - generic [ref=e714]: Assigned
+                    - generic: Object Status
+                    - generic: Entry successfully validated
+                - generic [ref=e715]:
+                  - button "View on Map" [ref=e717] [cursor=pointer]:
+                    - generic [ref=e718]:
+                      - generic [ref=e719]: 
+                      - generic [ref=e720]: View on Map
+                  - button "Get Directions" [ref=e722] [cursor=pointer]:
+                    - generic [ref=e723]:
+                      - generic [ref=e724]: 
+                      - generic [ref=e725]: Get Directions
+    - text:  
