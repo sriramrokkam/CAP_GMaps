@@ -15,28 +15,29 @@ A Python FastAPI service deployed on BTP CF alongside the existing CAP app. It h
 ## Repository Structure
 
 ```
-cap-iot/
-  agents/                        ← new Python package
-    main.py                      ← FastAPI app entrypoint
-    agents/
-      supervisor.py              ← SupervisorAgent (router + HiTL gate)
-      delivery_agent.py          ← DeliveryAgent
-      driver_agent.py            ← DriverAgent
-      route_agent.py             ← RouteAgent
-      monitor_agent.py           ← MonitorAgent (APScheduler background)
-    tools/
-      delivery_tools.py          ← OData calls for EWM deliveries
-      driver_tools.py            ← OData calls for tracking/assignments
-      route_tools.py             ← OData calls for GMaps routes
-      teams_tools.py             ← Teams webhook poster
-      odata_client.py            ← Shared authenticated OData HTTP client
-    state.py                     ← LangGraph shared state schema
-    config.py                    ← Env var loading
-    requirements.txt
-    manifest.yml                 ← CF push manifest (standalone)
+agents/                          ← root folder for Phase 3 (separate from cap-iot)
+  main.py                        ← FastAPI app entrypoint
+  agents/
+    supervisor.py                ← SupervisorAgent (router + HiTL gate)
+    delivery_agent.py            ← DeliveryAgent
+    driver_agent.py              ← DriverAgent
+    route_agent.py               ← RouteAgent
+    monitor_agent.py             ← MonitorAgent (APScheduler background)
+  tools/
+    delivery_tools.py            ← OData calls for EWM deliveries
+    driver_tools.py              ← OData calls for tracking/assignments
+    route_tools.py               ← OData calls for GMaps routes
+    teams_tools.py               ← Teams webhook poster
+    odata_client.py              ← Shared authenticated OData HTTP client
+  state.py                       ← LangGraph shared state schema
+  config.py                      ← Env var loading
+  .env                           ← local dev config (git-ignored)
+  requirements.txt
+  manifest.yml                   ← CF push manifest for standalone `cf push agents`
+  mta.yaml                       ← own MTA for integrated CF deploy
 ```
 
-New MTA module `agents` added to `cap-iot/mta.yaml` for integrated CF deploy.
+Standalone repo/folder at project root — deployed independently from `cap-iot`.
 
 ---
 
@@ -208,7 +209,7 @@ Alert deduplication: MonitorAgent tracks last-alerted state in-process dict keye
 ```yaml
 - name: agents
   type: python
-  path: cap-iot/agents
+  path: .
   parameters:
     buildpack: python_buildpack
     memory: 512M
@@ -216,10 +217,10 @@ Alert deduplication: MonitorAgent tracks last-alerted state in-process dict keye
     - name: gmaps-xsuaa
     - name: gmaps-destination
   properties:
-    CAP_BASE_URL: ~{srv-url}
+    CAP_BASE_URL: https://<gmaps-app-srv>.cfapps.us10.hana.ondemand.com
 ```
 
-The `manifest.yml` in `cap-iot/agents/` supports standalone `cf push agents` for fast iteration during PoC.
+The `manifest.yml` at `agents/` root supports standalone `cf push agents` for fast PoC iteration without a full MTA build.
 
 ---
 
