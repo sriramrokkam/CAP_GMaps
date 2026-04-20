@@ -42,7 +42,10 @@ def get_delivery_items(delivery_doc: str) -> str:
 @tool
 def get_delivery_route(delivery_doc: str) -> str:
     """Fetch Google Maps route for a delivery. Pass the DeliveryDocument number from list_open_deliveries()."""
-    data = _client.post("/odata/v4/ewm/getDeliveryRoute", {"deliveryDoc": delivery_doc})
+    try:
+        data = _client.post("/odata/v4/ewm/getDeliveryRoute", {"deliveryDoc": delivery_doc})
+    except Exception as e:
+        return f"Could not get route for {delivery_doc}: {e}"
     if not data:
         return f"No route found for delivery {delivery_doc}."
     return f"Route for {delivery_doc}: {data.get('origin','?')} → {data.get('destination','?')} | Distance: {data.get('distance','?')} | Duration: {data.get('duration','?')}"

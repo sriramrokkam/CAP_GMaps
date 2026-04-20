@@ -59,6 +59,8 @@
   ],
   "authorities": [
     "$XSAPPNAME.emmanagement",
-    "$XSAPPNAME.mtcallback"
+    "$XSAPPNAME.mtcallback",
+    "$XSAPPNAME.gmaps_user",
+    "$XSAPPNAME.Transport_Admin"
   ]
 }

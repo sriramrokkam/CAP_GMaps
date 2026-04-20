@@ -42,3 +42,13 @@ class ODataClient:
         )
         resp.raise_for_status()
         return resp.json()
+
+    def patch(self, path: str, body: dict) -> dict:
+        resp = httpx.patch(
+            f"{self._settings.cap_base_url}{path}",
+            json=body,
+            headers={"Authorization": f"Bearer {self._get_token()}"},
+            timeout=15,
+        )
+        resp.raise_for_status()
+        return resp.json()
