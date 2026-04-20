@@ -11,5 +11,5 @@ def build_route_agent():
     return create_react_agent(
         get_llm(),
         tools=[get_route_for_delivery, list_all_routes, get_route_steps],
-        state_modifier=SYSTEM,
+        prompt=SYSTEM,
     )

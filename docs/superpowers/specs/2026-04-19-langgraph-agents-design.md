@@ -291,3 +291,26 @@ A `cap-sap-prototyping` skill extension will be written covering:
 - Redis state store
 - Multi-tenant XSUAA
 - Kyma deployment
+
+---
+
+## Addendum: Graph & Studio Quality Upgrade (2026-04-20)
+
+**Branch:** `feature_agents`  
+**Plan:** `agents/docs/superpowers/plans/2026-04-20-graph-studio-quality.md`
+
+### Changes from Original Design
+
+| Area | Original (Phase 3) | Updated |
+|------|-------------------|---------|
+| **LangGraph version** | 0.2.56 | 1.1.8 + langgraph-prebuilt 1.0.10 |
+| **HiTL pattern** | Custom `PROPOSAL\|tool=...\|args=...` string parsing in supervisor | Native `interrupt_before=["tools"]` on DriverAgent |
+| **State schema** | `AgentState` with messages, thread_id, pending_action, confirmed, _route | `AgentState` with messages only |
+| **Graph entry point** | `build_supervisor()` returns (graph, memory); separate `graph()` for Studio | Single module-level `graph` variable, both Studio and FastAPI consume it |
+| **Driver tools** | Fake `propose_assign_driver` / `propose_confirm_delivery` returning PROPOSAL strings + separate `execute_*` functions | Real `assign_driver` / `confirm_delivery` tools that execute directly; safety via graph interrupt |
+| **Tool descriptions** | Generic | Include prerequisite guidance (e.g., "Pass UUID from list_assignments()") |
+| **LangSmith Studio** | Not tested | Fully working — graph renders, Resume button for HiTL |
+
+### Why
+
+The original custom HiTL pattern required string parsing and was invisible to LangSmith Studio. LangGraph 1.x provides a native interrupt mechanism that Studio understands (shows Resume button). The upgrade also eliminated the dual entry point (two MemorySaver instances) and simplified the state schema by removing fields that only existed to support the custom pattern.

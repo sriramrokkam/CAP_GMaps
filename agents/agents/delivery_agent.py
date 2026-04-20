@@ -12,5 +12,5 @@ def build_delivery_agent():
     return create_react_agent(
         get_llm(),
         tools=[list_open_deliveries, list_unassigned_deliveries, get_delivery_items, get_delivery_route],
-        state_modifier=SYSTEM,
+        prompt=SYSTEM,
     )
