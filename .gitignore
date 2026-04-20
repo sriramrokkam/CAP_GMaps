@@ -42,3 +42,7 @@ mta_archives/
 
 # @cap-js/cds-typer
 @cds-models
+
+# agents / .langgraph_api
+agents /.langgraph_api * 
+.langgraph*
