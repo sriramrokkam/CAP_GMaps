@@ -30,7 +30,7 @@ def list_unassigned_deliveries() -> str:
 
 @tool
 def get_delivery_items(delivery_doc: str) -> str:
-    """Get line items for a specific delivery document."""
+    """Get line items for a specific delivery. Pass the DeliveryDocument number from list_open_deliveries()."""
     data = _client.post("/odata/v4/ewm/getDeliveryItems", {"deliveryDoc": delivery_doc})
     items = data.get("value", [])
     if not items:
@@ -41,7 +41,7 @@ def get_delivery_items(delivery_doc: str) -> str:
 
 @tool
 def get_delivery_route(delivery_doc: str) -> str:
-    """Fetch Google Maps route for a delivery document."""
+    """Fetch Google Maps route for a delivery. Pass the DeliveryDocument number from list_open_deliveries()."""
     data = _client.post("/odata/v4/ewm/getDeliveryRoute", {"deliveryDoc": delivery_doc})
     if not data:
         return f"No route found for delivery {delivery_doc}."

@@ -29,3 +29,15 @@ def test_proposal_tools_removed():
 def test_driver_tools_have_guidance():
     assert "list_assignments" in get_driver_status.description.lower() or "UUID" in get_driver_status.description
     assert "list_assignments" in get_live_location.description.lower() or "UUID" in get_live_location.description
+
+
+from tools.delivery_tools import get_delivery_items, get_delivery_route
+from tools.route_tools import get_route_steps, get_route_for_delivery
+
+
+def test_delivery_tools_have_guidance():
+    assert "list_open_deliveries" in get_delivery_items.description.lower() or "DeliveryDocument" in get_delivery_items.description
+
+
+def test_route_tools_have_guidance():
+    assert "list_all_routes" in get_route_steps.description.lower() or "UUID" in get_route_steps.description

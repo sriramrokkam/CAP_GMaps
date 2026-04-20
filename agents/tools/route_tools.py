@@ -7,7 +7,7 @@ _client = ODataClient(settings)
 
 @tool
 def get_route_for_delivery(delivery_doc: str) -> str:
-    """Fetch Google Maps route directions for a delivery document."""
+    """Fetch Google Maps route directions for a delivery. Pass the DeliveryDocument number from list_open_deliveries()."""
     data = _client.post("/odata/v4/ewm/getDeliveryRoute", {"deliveryDoc": delivery_doc})
     if not data:
         return f"No route found for {delivery_doc}."
@@ -28,7 +28,7 @@ def list_all_routes() -> str:
 
 @tool
 def get_route_steps(route_id: str) -> str:
-    """Get turn-by-turn directions for a route ID."""
+    """Get turn-by-turn directions for a route. Pass a route UUID from list_all_routes()."""
     data = _client.get(f"/odata/v4/gmaps/RouteDirections({route_id})/steps", {"$orderby": "stepNumber asc"})
     steps = data.get("value", [])
     if not steps:
