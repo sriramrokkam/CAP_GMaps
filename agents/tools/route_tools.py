@@ -6,12 +6,15 @@ _client = ODataClient(settings)
 
 
 @tool
-def get_route_for_delivery(delivery_doc: str) -> str:
-    """Fetch Google Maps route directions for a delivery. Pass the DeliveryDocument number from list_open_deliveries()."""
-    data = _client.post("/odata/v4/ewm/getDeliveryRoute", {"deliveryDoc": delivery_doc})
+def get_directions(origin: str, destination: str) -> str:
+    """Get Google Maps driving directions between two addresses. Returns distance, duration, and route summary."""
+    try:
+        data = _client.post("/odata/v4/gmaps/getDirections", {"from": origin, "to": destination})
+    except Exception as e:
+        return f"Could not get directions: {e}. Try list_all_routes() to see previously stored routes."
     if not data:
-        return f"No route found for {delivery_doc}."
-    return (f"Route for {delivery_doc}: {data.get('origin','?')} → {data.get('destination','?')} | "
+        return f"No route found from {origin} to {destination}."
+    return (f"Route: {data.get('origin', origin)} → {data.get('destination', destination)} | "
             f"Distance: {data.get('distance','?')} | Duration: {data.get('duration','?')}")
 
 

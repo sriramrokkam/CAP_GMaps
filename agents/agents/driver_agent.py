@@ -19,5 +19,4 @@ def build_driver_agent():
         get_llm(),
         tools=[list_drivers, list_assignments, get_driver_status, get_live_location, assign_driver, confirm_delivery],
         prompt=SYSTEM,
-        interrupt_before=["tools"],
     )
