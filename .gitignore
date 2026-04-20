@@ -19,6 +19,10 @@ target/
 # Test files
 test-*.html
 
+# Python virtual environments
+.venv/
+venv/
+
 # Playwright MCP temp artifacts
 .playwright-mcp/
 
