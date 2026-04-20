@@ -1,0 +1,4 @@
+- generic [ref=e2]:
+  - main [ref=e4]
+  - region "Notifications (F8)":
+    - list

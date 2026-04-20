@@ -1,0 +1,181 @@
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e3]:
+      - banner [ref=e4]:
+        - generic [ref=e5]:
+          - button "button" [ref=e6] [cursor=pointer]:
+            - img [ref=e7]
+            - img [ref=e20]
+          - button "Collapse (⌘B)" [ref=e22] [cursor=pointer]:
+            - img [ref=e23]
+        - generic [ref=e26]:
+          - generic [ref=e27]:
+            - generic [ref=e28]:
+              - generic [ref=e29]: Application
+              - button "button" [ref=e30] [cursor=pointer]:
+                - generic [ref=e31]:
+                  - img [ref=e33]
+                  - generic [ref=e35]: All applications
+                  - img [ref=e36]
+            - button "Search ⌘ K" [ref=e38] [cursor=pointer]:
+              - img [ref=e40]
+              - generic [ref=e42]: Search
+              - generic [ref=e43]:
+                - generic [ref=e44]: ⌘
+                - generic [ref=e45]: K
+            - link "Home" [ref=e46] [cursor=pointer]:
+              - /url: /o/fdee1bcc-839d-5a7c-8624-37a1fea3de4e
+              - generic [ref=e47]:
+                - img [ref=e50]
+                - generic [ref=e52]: Home
+            - link "Tracing" [ref=e53] [cursor=pointer]:
+              - /url: /o/fdee1bcc-839d-5a7c-8624-37a1fea3de4e/projects
+              - generic [ref=e54]:
+                - img [ref=e57]
+                - generic [ref=e59]: Tracing
+              - generic [ref=e61]: "6"
+            - link "Monitoring" [ref=e62] [cursor=pointer]:
+              - /url: /o/fdee1bcc-839d-5a7c-8624-37a1fea3de4e/dashboards
+              - generic [ref=e63]:
+                - img [ref=e66]
+                - generic [ref=e68]: Monitoring
+            - link "Datasets & Experiments" [ref=e69] [cursor=pointer]:
+              - /url: /o/fdee1bcc-839d-5a7c-8624-37a1fea3de4e/datasets
+              - generic [ref=e70]:
+                - img [ref=e73]
+                - generic [ref=e75]: Datasets & Experiments
+            - link "Evaluators" [ref=e76] [cursor=pointer]:
+              - /url: /o/fdee1bcc-839d-5a7c-8624-37a1fea3de4e/evaluators
+              - generic [ref=e77]:
+                - img [ref=e80]
+                - generic [ref=e82]: Evaluators
+            - link "Annotation Queues" [ref=e83] [cursor=pointer]:
+              - /url: /o/fdee1bcc-839d-5a7c-8624-37a1fea3de4e/annotation-queues
+              - generic [ref=e84]:
+                - img [ref=e87]
+                - generic [ref=e89]: Annotation Queues
+            - link "Prompts" [ref=e90] [cursor=pointer]:
+              - /url: /prompts?organizationId=fdee1bcc-839d-5a7c-8624-37a1fea3de4e
+              - generic [ref=e91]:
+                - img [ref=e94]
+                - generic [ref=e96]: Prompts
+            - link "Playground" [ref=e97] [cursor=pointer]:
+              - /url: /o/fdee1bcc-839d-5a7c-8624-37a1fea3de4e/playground
+              - generic [ref=e98]:
+                - img [ref=e101]
+                - generic [ref=e104]: Playground
+            - link "Studio" [active] [ref=e105] [cursor=pointer]:
+              - /url: /o/fdee1bcc-839d-5a7c-8624-37a1fea3de4e/studio/connect?organizationId=fdee1bcc-839d-5a7c-8624-37a1fea3de4e&render=interact&baseUrl=http%3A%2F%2F127.0.0.1%3A2024&mode=graph&assistantId=3dba61cc-373b-5094-96d6-8331cb40a952
+              - generic [ref=e106]:
+                - img [ref=e109]
+                - generic [ref=e111]: Studio
+            - link "Deployments" [ref=e112] [cursor=pointer]:
+              - /url: /o/fdee1bcc-839d-5a7c-8624-37a1fea3de4e/host/deployments
+              - generic [ref=e113]:
+                - img [ref=e116]
+                - generic [ref=e118]: Deployments
+            - link "Sandboxes" [ref=e119] [cursor=pointer]:
+              - /url: /o/fdee1bcc-839d-5a7c-8624-37a1fea3de4e/host/sandboxes
+              - generic [ref=e120]:
+                - img [ref=e123]
+                - generic [ref=e125]: Sandboxes
+          - generic [ref=e126]:
+            - link "Settings" [ref=e127] [cursor=pointer]:
+              - /url: /o/fdee1bcc-839d-5a7c-8624-37a1fea3de4e/settings
+              - generic [ref=e128]:
+                - img [ref=e131]
+                - generic [ref=e134]: Settings
+            - button "Personal sriramrokkam@gmail.com" [ref=e136] [cursor=pointer]:
+              - generic [ref=e140]:
+                - generic [ref=e141]: Personal
+                - generic [ref=e142]: sriramrokkam@gmail.com
+      - main [ref=e143]:
+        - generic [ref=e517]:
+          - generic [ref=e518]:
+            - generic [ref=e519]:
+              - generic [ref=e520]:
+                - img [ref=e521]
+                - generic [ref=e523]: Studio
+              - text: /
+              - generic [ref=e524]:
+                - button "button" [ref=e525] [cursor=pointer]:
+                  - generic [ref=e526]: supervisor
+                  - img [ref=e527]
+                - generic [ref=e529]:
+                  - button "Graph" [ref=e530] [cursor=pointer]:
+                    - generic [ref=e531]: Graph
+                  - button "Chat" [disabled] [ref=e532]:
+                    - generic [ref=e533]: Chat
+              - img [ref=e535] [cursor=pointer]
+              - button "button" [ref=e537] [cursor=pointer]:
+                - generic [ref=e540]: Connected
+            - button "Memory" [ref=e543] [cursor=pointer]
+            - generic [ref=e544]:
+              - generic [ref=e545]:
+                - img [ref=e547]
+                - generic [ref=e549]:
+                  - heading "Failed to preview graph" [level=3] [ref=e550]
+                  - paragraph [ref=e551]:
+                    - text: Please ensure that the path to the compiled graph is present in
+                    - code [ref=e552]: langgraph.json
+                    - text: .
+              - alert [ref=e554]:
+                - generic [ref=e556]: "ConnectionError: Unable to connect to LangGraph server. Please ensure the server is running and accessible. Original error: Failed to fetch"
+                - button [ref=e557] [cursor=pointer]:
+                  - img [ref=e558]
+            - generic [ref=e561]:
+              - generic [ref=e562]:
+                - generic [ref=e563]:
+                  - generic [ref=e565]: Input
+                  - generic [ref=e566]:
+                    - button "View Raw" [ref=e567] [cursor=pointer]:
+                      - generic [ref=e568]: View Raw
+                    - button "Collapse input editor" [ref=e569] [cursor=pointer]:
+                      - img [ref=e570]
+                - generic [ref=e573]:
+                  - generic [ref=e578]:
+                    - generic [ref=e581]: "1"
+                    - textbox [ref=e584]:
+                      - generic [ref=e585]: "{}"
+                  - generic [ref=e586]:
+                    - generic [ref=e587] [cursor=pointer]:
+                      - combobox [ref=e588]: YAML
+                      - img [ref=e590]
+                    - generic [ref=e592]:
+                      - button "RAW" [ref=e593] [cursor=pointer]
+                      - img [ref=e596] [cursor=pointer]
+              - generic [ref=e598]:
+                - button "button" [ref=e600] [cursor=pointer]:
+                  - img [ref=e601]
+                  - generic [ref=e604]: Manage Assistants
+                - generic [ref=e606]:
+                  - button "Submit" [ref=e607] [cursor=pointer]:
+                    - img [ref=e608]
+                    - generic [ref=e611]: Submit
+                  - button "More options" [ref=e612] [cursor=pointer]:
+                    - img [ref=e613]
+          - separator
+          - generic [ref=e617]:
+            - generic [ref=e618]:
+              - button "button" [ref=e620] [cursor=pointer]:
+                - generic [ref=e621]: New Thread
+                - img [ref=e622]
+              - generic [ref=e624]:
+                - generic [ref=e625]:
+                  - button "Interact" [ref=e626] [cursor=pointer]:
+                    - generic [ref=e627]: Interact
+                  - button "Trace" [ref=e628] [cursor=pointer]:
+                    - generic [ref=e629]: Trace
+                - button "Run experiment" [ref=e630] [cursor=pointer]:
+                  - generic [ref=e631]: Run experiment
+            - generic [ref=e632]:
+              - slider [ref=e638] [cursor=pointer]
+              - generic [ref=e639]:
+                - img [ref=e641]
+                - generic [ref=e643]: New Thread
+                - generic [ref=e644]: Submit your input to run the assistant
+    - region "Notifications (F8)":
+      - list
+    - button [ref=e511] [cursor=pointer]:
+      - img
+  - iframe

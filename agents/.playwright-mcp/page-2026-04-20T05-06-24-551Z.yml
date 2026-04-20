@@ -1,0 +1,110 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e3]:
+      - banner [ref=e4]:
+        - button "Collapse (⌘B)" [ref=e7] [cursor=pointer]:
+          - img [ref=e8]
+        - button "O Workspace sriramrokkam@gmail.com" [ref=e14] [cursor=pointer]:
+          - generic [ref=e17]: O
+          - generic [ref=e18]:
+            - generic [ref=e19]: Workspace
+            - generic [ref=e20]: sriramrokkam@gmail.com
+      - main [ref=e21]:
+        - generic [ref=e27]:
+          - generic [ref=e28]:
+            - generic [ref=e29]:
+              - generic [ref=e30]:
+                - img [ref=e31]
+                - generic [ref=e33]: Studio
+              - text: /
+              - generic [ref=e34]:
+                - button "button" [ref=e35] [cursor=pointer]:
+                  - generic [ref=e36]: supervisor
+                  - img [ref=e37]
+                - generic [ref=e39]:
+                  - button "Graph" [ref=e40] [cursor=pointer]:
+                    - generic [ref=e41]: Graph
+                  - button "Chat" [disabled] [ref=e42]:
+                    - generic [ref=e43]: Chat
+              - button "button" [ref=e44] [cursor=pointer]:
+                - generic [ref=e47]: Connected
+            - button "Memory" [ref=e50] [cursor=pointer]
+            - generic [ref=e53]: Loading graph...
+            - generic [ref=e55]:
+              - generic [ref=e56]:
+                - generic [ref=e57]:
+                  - generic [ref=e59]: Input
+                  - generic [ref=e60]:
+                    - button "View Raw" [ref=e61] [cursor=pointer]:
+                      - generic [ref=e62]: View Raw
+                    - button "Collapse input editor" [ref=e63] [cursor=pointer]:
+                      - img [ref=e64]
+                - generic [ref=e66]:
+                  - button "messages Required" [ref=e68] [cursor=pointer]:
+                    - generic [ref=e70]:
+                      - img [ref=e71]
+                      - generic [ref=e73]: messages
+                    - generic [ref=e74]:
+                      - generic [ref=e75]: Required
+                      - img [ref=e76]
+                  - button "thread id Required" [ref=e79] [cursor=pointer]:
+                    - generic [ref=e81]:
+                      - img [ref=e82]
+                      - generic [ref=e84]: thread id
+                    - generic [ref=e85]:
+                      - generic [ref=e86]: Required
+                      - img [ref=e87]
+                  - button "pending action Required" [ref=e91] [cursor=pointer]:
+                    - generic [ref=e93]:
+                      - img [ref=e94]
+                      - generic [ref=e96]: pending action
+                    - generic [ref=e97]:
+                      - generic [ref=e98]: Required
+                      - img [ref=e99]
+                  - button "confirmed Required" [ref=e102] [cursor=pointer]:
+                    - generic [ref=e104]:
+                      - img [ref=e105]
+                      - generic [ref=e107]: confirmed
+                    - generic [ref=e108]:
+                      - generic [ref=e109]: Required
+                      - img [ref=e110]
+                  - button "route Required" [ref=e113] [cursor=pointer]:
+                    - generic [ref=e115]:
+                      - img [ref=e116]
+                      - generic [ref=e118]: route
+                    - generic [ref=e119]:
+                      - generic [ref=e120]: Required
+                      - img [ref=e121]
+              - generic [ref=e123]:
+                - button "button" [ref=e125] [cursor=pointer]:
+                  - img [ref=e126]
+                  - generic [ref=e129]: Manage Assistants
+                - generic [ref=e131]:
+                  - button "Submit" [ref=e132] [cursor=pointer]:
+                    - img [ref=e133]
+                    - generic [ref=e136]: Submit
+                  - button "More options" [ref=e137] [cursor=pointer]:
+                    - img [ref=e138]
+          - separator
+          - generic [ref=e142]:
+            - generic [ref=e143]:
+              - button "button" [ref=e145] [cursor=pointer]:
+                - generic [ref=e146]: New Thread
+                - img [ref=e147]
+              - generic [ref=e149]:
+                - generic [ref=e150]:
+                  - button "Interact" [ref=e151] [cursor=pointer]:
+                    - generic [ref=e152]: Interact
+                  - button "Trace" [ref=e153] [cursor=pointer]:
+                    - generic [ref=e154]: Trace
+                - button "Run experiment" [disabled] [ref=e155]:
+                  - generic [ref=e156]: Run experiment
+            - generic [ref=e157]:
+              - slider [ref=e163] [cursor=pointer]
+              - generic [ref=e164]:
+                - img [ref=e166]
+                - generic [ref=e168]: New Thread
+                - generic [ref=e169]: Submit your input to run the assistant
+    - region "Notifications (F8)":
+      - list
+  - iframe

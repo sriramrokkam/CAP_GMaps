@@ -1,0 +1,8 @@
+- generic [ref=e1]:
+  - heading "Dispatch Agent Chat" [level=1] [ref=e2]
+  - generic [ref=e3]:
+    - generic [ref=e7]: "You: list open deliveries"
+    - generic [ref=e8]: Agent is thinking...
+  - generic [ref=e4]:
+    - textbox "Ask something (e.g. 'list open deliveries')" [active] [ref=e5]
+    - button "Send" [ref=e6] [cursor=pointer]

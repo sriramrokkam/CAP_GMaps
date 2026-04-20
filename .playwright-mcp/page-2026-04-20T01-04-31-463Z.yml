@@ -1,0 +1,8 @@
+- generic [ref=e1]:
+  - heading "Dispatch Agent Chat" [level=1] [ref=e2]
+  - generic [ref=e3]:
+    - generic [ref=e7]: "You: list open deliveries"
+    - generic [ref=e9]: "Agent: Here are the 50 open deliveries: **Deliveries with Route TR0002:** - 80000000 → 17100001 - 80000001 → 17100001 - 80000002 → 17100001 - 80000003 → 17100001 - 80000004 → 17100003 - 80000024 → 17100001 - 80000025 → 17100001 - 80000026 → 17100001 - 80000027 → 17100001 - 80000029 → 17100001 - 80000037 → USCU-CUS08 - 80000040 → USCU-CUS08 - 80000043 → USCU-CUS08 - 80000046 → USCU-CUS08 - 80000049 → USCU-CUS08 **Deliveries without Routes:** - 80000005-80000023 → Various USCU customers - 80000028, 80000030-80000036, 80000038-80000039, 80000041-80000042, 80000044-80000045, 80000047-80000048 → Various USCU customers Note: Many deliveries are missing route assignments and may need driver allocation."
+  - generic [ref=e4]:
+    - textbox "Ask something (e.g. 'list open deliveries')" [active] [ref=e5]
+    - button "Send" [ref=e6] [cursor=pointer]
