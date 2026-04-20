@@ -16,3 +16,4 @@ class AgentState(TypedDict):
     thread_id: str
     pending_action: ActionProposal | None
     confirmed: bool | None
+    _route: str

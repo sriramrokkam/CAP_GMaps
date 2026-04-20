@@ -1,5 +1,8 @@
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
+from dotenv import load_dotenv
+load_dotenv()
+
 from fastapi import FastAPI
 from pydantic import BaseModel
 from apscheduler.schedulers.background import BackgroundScheduler
