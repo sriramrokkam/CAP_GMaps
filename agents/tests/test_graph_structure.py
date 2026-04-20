@@ -45,3 +45,51 @@ def test_driver_agent_has_interrupt_before_tools(mock_get_llm):
     assert agent.interrupt_before_nodes == ["tools"], (
         f"Driver agent must interrupt before 'tools', got {agent.interrupt_before_nodes}"
     )
+
+
+@patch("agents.driver_agent.get_llm")
+@patch("agents.delivery_agent.get_llm")
+@patch("agents.route_agent.get_llm")
+@patch("agents.supervisor.get_llm")
+def test_supervisor_graph_nodes(mock_sup_llm, mock_route_llm, mock_del_llm, mock_drv_llm):
+    fake = _make_fake_llm()
+    mock_sup_llm.return_value = fake
+    mock_route_llm.return_value = fake
+    mock_del_llm.return_value = fake
+    mock_drv_llm.return_value = fake
+
+    import importlib
+    import agents.supervisor as sup_mod
+    importlib.reload(sup_mod)
+    graph = sup_mod.graph
+
+    node_names = list(graph.nodes.keys())
+    assert "classify" in node_names
+    assert "delivery" in node_names
+    assert "driver" in node_names
+    assert "route" in node_names
+    assert "await_confirm" not in node_names, "await_confirm should be removed"
+
+
+@patch("agents.driver_agent.get_llm")
+@patch("agents.delivery_agent.get_llm")
+@patch("agents.route_agent.get_llm")
+@patch("agents.supervisor.get_llm")
+def test_supervisor_graph_is_compiled(mock_sup_llm, mock_route_llm, mock_del_llm, mock_drv_llm):
+    fake = _make_fake_llm()
+    mock_sup_llm.return_value = fake
+    mock_route_llm.return_value = fake
+    mock_del_llm.return_value = fake
+    mock_drv_llm.return_value = fake
+
+    import importlib
+    import agents.supervisor as sup_mod
+    importlib.reload(sup_mod)
+
+    from langgraph.graph.state import CompiledStateGraph
+    assert isinstance(sup_mod.graph, CompiledStateGraph)
+
+
+def test_supervisor_has_no_build_function():
+    import agents.supervisor as sup_mod
+    assert not hasattr(sup_mod, "build_supervisor"), "build_supervisor() should be removed"
