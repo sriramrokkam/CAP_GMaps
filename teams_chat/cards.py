@@ -70,6 +70,6 @@ def _card(body: list, actions: list | None = None) -> dict:
     if actions:
         card["actions"] = actions
     return {
-        "contentType": "application/vnd.microsoft.card.adaptive",
+        "content_type": "application/vnd.microsoft.card.adaptive",
         "content": card,
     }

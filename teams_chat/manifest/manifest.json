@@ -1,0 +1,44 @@
+{
+  "$schema": "https://developer.microsoft.com/en-us/json-schemas/teams/v1.13/MicrosoftTeams.schema.json",
+  "manifestVersion": "1.13",
+  "version": "1.0.0",
+  "id": "e93ac15a-9d01-418a-aecd-0ac018e8e03e",
+  "packageName": "com.sap.dispatch.bot",
+  "developer": {
+    "name": "SAP Dispatch",
+    "websiteUrl": "https://github.com/sriramrokkam/CAP_GMaps",
+    "privacyUrl": "https://github.com/sriramrokkam/CAP_GMaps",
+    "termsOfUseUrl": "https://github.com/sriramrokkam/CAP_GMaps"
+  },
+  "name": {
+    "short": "Dispatch Bot",
+    "full": "SAP EWM Dispatch Agent Bot"
+  },
+  "description": {
+    "short": "Ask about deliveries, drivers, and routes",
+    "full": "AI-powered dispatch assistant that manages EWM outbound deliveries, driver assignments, GPS tracking, and Google Maps routes. Powered by LangGraph and SAP AI Core Claude."
+  },
+  "icons": {
+    "color": "color.png",
+    "outline": "outline.png"
+  },
+  "accentColor": "#0070D2",
+  "bots": [
+    {
+      "botId": "e93ac15a-9d01-418a-aecd-0ac018e8e03e",
+      "scopes": ["personal", "team", "groupchat"],
+      "commandLists": [
+        {
+          "scopes": ["personal", "team", "groupchat"],
+          "commands": [
+            {"title": "dashboard", "description": "Show delivery and driver summary"},
+            {"title": "list deliveries", "description": "Show open EWM deliveries"},
+            {"title": "show drivers", "description": "List registered drivers"},
+            {"title": "list assignments", "description": "Show active driver assignments"}
+          ]
+        }
+      ]
+    }
+  ],
+  "validDomains": []
+}
