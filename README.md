@@ -1,5 +1,13 @@
 # CAP Google Maps + EWM IoT Driver Tracking
 
+## Development Phases
+
+| Phase | Branch | Scope | Status |
+|-------|--------|-------|--------|
+| **Ph1** | `feature_ph1_iot_mst_alerts` | CAP IoT: EWM deliveries, Google Maps routing, GPS tracking, Teams webhook alerts | ✅ Complete |
+| **Ph2** | `feature_ph2_lg_agents` | LangGraph AI agents: supervisor + 3 ReAct subagents (delivery, driver, route), LangSmith Studio, SAP AI Core Claude | ✅ Complete |
+| **Ph3** | `feature_ph3_lg_agents_mst_chat` | Teams Bot chat: Azure Bot Service adapter over Ph2 agents, actionable cards, dashboard | 📋 Designed |
+
 ## Overview
 
 SAP Cloud Application Programming Model (CAP) project integrating **Google Maps**, **SAP EWM Outbound Deliveries**, and **real-time IoT driver tracking** into Fiori Elements applications. Dispatchers manage deliveries, assign drivers, and track GPS live on a map — with Kafka event streaming and MS Teams notifications.

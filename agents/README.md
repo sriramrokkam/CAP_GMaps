@@ -1,5 +1,7 @@
 # Dispatch Agents — LangGraph Multi-Agent System
 
+> **Phase 2** (`feature_ph2_lg_agents`) — LangGraph supervisor + 3 ReAct subagents with 18 tools, LangSmith Studio, SAP AI Core Claude. See [root README](../README.md) for all phases.
+
 A Python FastAPI service that lets dispatchers manage EWM deliveries, driver assignments, and Google Maps routes via natural language. Built on LangGraph with SAP AI Core (Claude) as the LLM.
 
 ## Quick Start
