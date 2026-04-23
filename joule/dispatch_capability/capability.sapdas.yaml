@@ -8,5 +8,5 @@ metadata:
     Dispatch assistant for managing EWM deliveries, driver assignments,
     GPS tracking, and Google Maps routes via natural language.
 system_aliases:
-  - name: DispatchAgents
-    timeout: 45
+  DispatchAgents:
+    destination: DispatchAgents

@@ -8,7 +8,7 @@ target:
   type: function
   name: dispatch
 response_context:
-  - value: reply
+  - value: $target_result.reply
     description: Agent response to the dispatch query
 capability_context:
   - name: thread_id
