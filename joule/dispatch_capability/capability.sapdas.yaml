@@ -1,0 +1,12 @@
+schema_version: 3.6.0
+metadata:
+  display_name: Dispatch Assistant
+  namespace: com.sap.dispatch
+  name: dispatch_capability
+  version: 1.0.0-SNAPSHOT
+  description: >-
+    Dispatch assistant for managing EWM deliveries, driver assignments,
+    GPS tracking, and Google Maps routes via natural language.
+system_aliases:
+  - name: DispatchAgents
+    timeout: 45
