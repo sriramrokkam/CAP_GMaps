@@ -14,5 +14,5 @@ applications:
       MONITOR_POLL_INTERVAL_SEC: 300
       UNASSIGNED_THRESHOLD_MIN: 30
       IDLE_THRESHOLD_MIN: 20
-      LANGCHAIN_TRACING_V2: false
+      LANGCHAIN_TRACING_V2: true
       LANGCHAIN_PROJECT: gmaps-dispatch-agents
