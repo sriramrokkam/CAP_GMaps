@@ -15,7 +15,7 @@ action_groups:
             value: "<? $capability_context.thread_id != null ? $capability_context.thread_id : $transient.user.id ?>"
       - type: api-request
         method: POST
-        system_alias: DispatchAgents
+        system_alias: GMaps_OD_Dispatch_Agent
         path: /chat
         headers:
           Content-Type: application/json
