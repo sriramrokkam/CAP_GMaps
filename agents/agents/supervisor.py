@@ -73,9 +73,9 @@ def run_driver(state: SupervisorState) -> dict:
     return {"messages": result["messages"]}
 
 
-def run_route(state: SupervisorState) -> dict:
+async def run_route(state: SupervisorState) -> dict:
     msgs = _user_messages(state) or state["messages"][:1]
-    result = _route_agent.invoke({"messages": msgs})
+    result = await _route_agent.ainvoke({"messages": msgs})
     return {"messages": result["messages"]}
 
 

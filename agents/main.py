@@ -174,16 +174,16 @@ def index():
 
 
 @app.post("/chat", response_model=ChatResponse)
-def chat(req: ChatRequest):
+async def chat(req: ChatRequest):
     config = {"configurable": {"thread_id": req.thread_id}}
 
     # Check if graph is interrupted (awaiting confirmation)
-    state = _graph.get_state(config)
+    state = await _graph.aget_state(config)
     if state.tasks and any(t.interrupts for t in state.tasks):
         if req.confirm is True:
-            result = _graph.invoke(Command(resume=True), config=config)
+            result = await _graph.ainvoke(Command(resume=True), config=config)
         else:
-            result = _graph.invoke(
+            result = await _graph.ainvoke(
                 {"message": "Action cancelled by user."},
                 config=config,
             )
@@ -191,13 +191,13 @@ def chat(req: ChatRequest):
         return ChatResponse(reply=last_msg)
 
     # Normal message — invoke graph (pass via UserInput schema)
-    result = _graph.invoke(
+    result = await _graph.ainvoke(
         {"message": req.message},
         config=config,
     )
 
     # Check if graph is now interrupted after invocation
-    state = _graph.get_state(config)
+    state = await _graph.aget_state(config)
     pending = None
     if state.tasks and any(t.interrupts for t in state.tasks):
         for task in state.tasks:

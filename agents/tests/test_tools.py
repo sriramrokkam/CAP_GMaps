@@ -32,7 +32,7 @@ def test_driver_tools_have_guidance():
 
 
 from tools.delivery_tools import get_delivery_items, get_delivery_route
-from tools.route_tools import get_route_steps, get_route_for_delivery
+from tools.route_tools import get_route_steps
 
 
 def test_delivery_tools_have_guidance():

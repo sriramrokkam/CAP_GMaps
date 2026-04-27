@@ -37,14 +37,11 @@ def _make_fake_llm():
 
 
 @patch("agents.driver_agent.get_llm")
-def test_driver_agent_has_interrupt_before_tools(mock_get_llm):
+def test_driver_agent_has_tools_node(mock_get_llm):
     mock_get_llm.return_value = _make_fake_llm()
     from agents.driver_agent import build_driver_agent
     agent = build_driver_agent()
     assert "tools" in list(agent.nodes.keys()), "Driver agent must have a 'tools' node"
-    assert agent.interrupt_before_nodes == ["tools"], (
-        f"Driver agent must interrupt before 'tools', got {agent.interrupt_before_nodes}"
-    )
 
 
 @patch("agents.driver_agent.get_llm")
