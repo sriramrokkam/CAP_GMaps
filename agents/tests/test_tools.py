@@ -1,4 +1,5 @@
 from tools.driver_tools import (
+    list_free_drivers,
     list_drivers,
     list_assignments,
     get_driver_status,
@@ -12,6 +13,11 @@ from tools.driver_tools import (
 def test_assign_driver_is_a_real_tool():
     assert assign_driver.name == "assign_driver"
     assert "assign" in assign_driver.description.lower()
+
+
+def test_list_free_drivers_is_a_tool():
+    assert list_free_drivers.name == "list_free_drivers"
+    assert "free" in list_free_drivers.description.lower() or "active" in list_free_drivers.description.lower()
 
 
 def test_confirm_delivery_is_a_real_tool():
@@ -100,3 +106,51 @@ def test_old_route_tools_removed():
 
 def test_route_tools_have_guidance():
     assert "list_routes" in get_route_steps.description.lower() or "UUID" in get_route_steps.description
+
+
+# ── list_free_drivers mock tests ──
+
+from unittest.mock import patch
+
+
+def test_list_free_drivers_excludes_busy():
+    def mock_get(path, params=None):
+        if "DriverAssignment" in path:
+            return {"value": [
+                {"MobileNumber": "+911111"},
+            ]}
+        if "Driver" in path:
+            return {"value": [
+                {"ID": "d1", "DriverName": "Raj", "MobileNumber": "+911111", "TruckRegistration": "KA01"},
+                {"ID": "d2", "DriverName": "Sriram", "MobileNumber": "+912222", "TruckRegistration": "KA02"},
+                {"ID": "d3", "DriverName": "Priya", "MobileNumber": "+913333", "TruckRegistration": "KA03"},
+            ]}
+        return {"value": []}
+
+    with patch("tools.driver_tools._client") as mock_client:
+        mock_client.get.side_effect = mock_get
+        result = list_free_drivers.invoke({})
+
+    assert "Raj" not in result
+    assert "Sriram" in result
+    assert "Priya" in result
+    assert "2 free drivers" in result
+
+
+def test_list_free_drivers_all_busy():
+    def mock_get(path, params=None):
+        if "DriverAssignment" in path:
+            return {"value": [
+                {"MobileNumber": "+911111"},
+            ]}
+        if "Driver" in path:
+            return {"value": [
+                {"ID": "d1", "DriverName": "Raj", "MobileNumber": "+911111", "TruckRegistration": "KA01"},
+            ]}
+        return {"value": []}
+
+    with patch("tools.driver_tools._client") as mock_client:
+        mock_client.get.side_effect = mock_get
+        result = list_free_drivers.invoke({})
+
+    assert "all active drivers" in result.lower()

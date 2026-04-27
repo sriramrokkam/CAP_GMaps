@@ -9,6 +9,41 @@ _client = ODataClient(settings)
 # ── Read tools ──
 
 @tool
+def list_free_drivers(top: int = 20) -> str:
+    """List drivers with no active delivery — i.e. 'free' or 'available' drivers.
+    A driver is free if they have no DriverAssignment with Status ASSIGNED or IN_TRANSIT.
+    Use this when the user asks for 'free drivers', 'available drivers', or 'idle drivers'."""
+    try:
+        drivers = _client.get("/odata/v4/tracking/Driver", {
+            "$filter": "IsActive eq true",
+            "$top": "200",
+        }).get("value", [])
+        if not drivers:
+            return "No active drivers found."
+
+        busy_resp = _client.get("/odata/v4/tracking/DriverAssignment", {
+            "$filter": "Status eq 'ASSIGNED' or Status eq 'IN_TRANSIT'",
+            "$select": "MobileNumber",
+            "$top": "200",
+        })
+        busy_mobiles = {a["MobileNumber"] for a in busy_resp.get("value", []) if a.get("MobileNumber")}
+
+        free = [d for d in drivers if d.get("MobileNumber") not in busy_mobiles]
+        if not free:
+            return "All active drivers currently have deliveries assigned."
+        free = free[:top]
+        lines = []
+        for d in free:
+            lines.append(
+                f"- {d.get('DriverName', '?')} | ID: {d.get('ID', '?')} | "
+                f"Mobile: {d.get('MobileNumber', '?')} | Truck: {d.get('TruckRegistration', '?')}"
+            )
+        return f"{len(free)} free drivers:\n" + "\n".join(lines)
+    except Exception as e:
+        return f"Could not list free drivers: {e}"
+
+
+@tool
 def list_drivers(
     name: str = "",
     mobile: str = "",
