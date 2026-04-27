@@ -93,3 +93,41 @@ def test_supervisor_graph_is_compiled(mock_sup_llm, mock_route_llm, mock_del_llm
 def test_supervisor_has_no_build_function():
     import agents.supervisor as sup_mod
     assert not hasattr(sup_mod, "build_supervisor"), "build_supervisor() should be removed"
+
+
+@patch("agents.route_agent.get_llm")
+def test_route_agent_accepts_mcp_tools(mock_get_llm):
+    """build_route_agent() should include extra MCP tools when passed."""
+    mock_get_llm.return_value = _make_fake_llm()
+    from agents.route_agent import build_route_agent
+    from langchain_core.tools import tool
+
+    @tool
+    def fake_mcp_tool(query: str) -> str:
+        """A fake MCP tool for testing."""
+        return query
+
+    agent = build_route_agent(mcp_tools=[fake_mcp_tool])
+    assert "tools" in list(agent.nodes.keys())
+
+
+@patch("agents.route_agent.get_llm")
+def test_route_agent_works_without_mcp_tools(mock_get_llm):
+    """build_route_agent() without args uses only the 4 standard tools."""
+    mock_get_llm.return_value = _make_fake_llm()
+    from agents.route_agent import build_route_agent
+    agent = build_route_agent()
+    assert "tools" in list(agent.nodes.keys())
+
+
+@patch("agents.route_agent.get_llm")
+def test_supervisor_set_route_agent_replaces_instance(mock_get_llm):
+    """set_route_agent() replaces the module-level _route_agent in supervisor."""
+    mock_get_llm.return_value = _make_fake_llm()
+    import importlib
+    import agents.supervisor as sup_mod
+    importlib.reload(sup_mod)
+
+    sentinel = object()
+    sup_mod.set_route_agent(sentinel)
+    assert sup_mod._route_agent is sentinel

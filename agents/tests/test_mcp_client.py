@@ -27,11 +27,14 @@ async def test_load_mcp_tools_returns_list_on_success():
 @pytest.mark.asyncio
 async def test_load_mcp_tools_returns_empty_list_on_failure():
     """load_mcp_tools() must not raise — returns [] on any error."""
-    with patch("mcp_client.MultiServerMCPClient", side_effect=Exception("Node not found")):
-        import importlib
-        import mcp_client as mod
-        importlib.reload(mod)
-        result = await mod.load_mcp_tools()
+    import importlib
+    import mcp_client as mod
+    importlib.reload(mod)
+
+    # Patch os.environ so API key is present, but make MultiServerMCPClient raise
+    with patch.dict("os.environ", {"GOOGLE_MAPS_API_KEY": "fake-key"}):
+        with patch.object(mod, "MultiServerMCPClient", side_effect=Exception("Node not found")):
+            result = await mod.load_mcp_tools()
 
     assert result == []
 

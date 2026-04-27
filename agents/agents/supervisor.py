@@ -22,6 +22,12 @@ _route_agent = build_route_agent()
 _llm = get_llm()
 
 
+def set_route_agent(agent) -> None:
+    """Replace the route agent with one that has MCP tools loaded. Called from main.py lifespan."""
+    global _route_agent
+    _route_agent = agent
+
+
 class UserInput(TypedDict):
     """Input schema for LangGraph Studio — type your message here."""
     message: str

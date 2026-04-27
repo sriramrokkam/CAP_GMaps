@@ -11,6 +11,9 @@ import httpx
 
 from agents.supervisor import graph
 from agents.monitor_agent import run_all_checks
+from agents.route_agent import build_route_agent
+from agents.supervisor import set_route_agent
+from mcp_client import load_mcp_tools
 from config import settings
 from tools.odata_client import ODataClient
 from langchain_core.messages import HumanMessage
@@ -28,6 +31,12 @@ _monitor_state = {"last_run": None, "next_run": None, "status": "stopped"}
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global _scheduler
+
+    # Load Google Maps MCP tools and rebuild route agent with them
+    mcp_tools = await load_mcp_tools()
+    if mcp_tools:
+        set_route_agent(build_route_agent(mcp_tools))
+
     _scheduler = BackgroundScheduler()
 
     def _run():
