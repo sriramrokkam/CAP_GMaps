@@ -1,12 +1,30 @@
 from langchain_core.tools import tool
 from tools.odata_client import ODataClient, build_filter
 from config import settings
+import os
+import httpx
 
 
 _client = ODataClient(settings)
 
 
-# ── Read tools ──
+def _reverse_geocode(lat: float, lng: float) -> str:
+    """Return a human-readable address for coordinates, or 'lat,lng' if unavailable."""
+    api_key = os.environ.get("GOOGLE_MAPS_API_KEY", "")
+    if not api_key or lat is None or lng is None:
+        return f"{lat}, {lng}"
+    try:
+        resp = httpx.get(
+            "https://maps.googleapis.com/maps/api/geocode/json",
+            params={"latlng": f"{lat},{lng}", "key": api_key},
+            timeout=10,
+        )
+        results = resp.json().get("results", [])
+        if results:
+            return results[0].get("formatted_address", f"{lat}, {lng}")
+    except Exception:
+        pass
+    return f"{lat}, {lng}"
 
 @tool
 def list_free_drivers(top: int = 20) -> str:
@@ -132,11 +150,16 @@ def get_driver_status(assignment_id: str) -> str:
         data = _client.get(f"/odata/v4/tracking/getAssignment(assignmentId={assignment_id})")
     except Exception as e:
         return f"Could not get assignment: {e}"
+    lat = data.get('CurrentLat')
+    lng = data.get('CurrentLng')
+    location = _reverse_geocode(lat, lng) if lat and lng else "Unknown"
+    eta = data.get('EstimatedDuration', '?')
     return (f"Driver: {data.get('DriverName', '?')} | Status: {data.get('Status', '?')} | "
             f"Delivery: {data.get('DeliveryDocument', '?')} | Truck: {data.get('TruckRegistration', '?')} | "
             f"Assigned: {data.get('AssignedAt', '?')} | "
-            f"Current GPS: {data.get('CurrentLat', '?')}, {data.get('CurrentLng', '?')} | "
-            f"Speed: {data.get('CurrentSpeed', '?')} | Last GPS: {data.get('LastGpsAt', '?')}")
+            f"Current Location: {location} | "
+            f"Speed: {data.get('CurrentSpeed', '?')} km/h | Last GPS: {data.get('LastGpsAt', '?')} | "
+            f"Estimated delivery time remaining: {eta}")
 
 
 @tool
@@ -146,7 +169,10 @@ def get_live_location(assignment_id: str) -> str:
         data = _client.get(f"/odata/v4/tracking/latestGps(assignmentId={assignment_id})")
     except Exception as e:
         return f"Could not get location: {e}"
-    return (f"Last GPS: Lat {data.get('Latitude', '?')}, Lng {data.get('Longitude', '?')} | "
+    lat = data.get('Latitude')
+    lng = data.get('Longitude')
+    location = _reverse_geocode(lat, lng) if lat and lng else "Unknown"
+    return (f"Current Location: {location} | "
             f"Speed: {data.get('Speed', '?')} m/s | Updated: {data.get('LastGpsAt', '?')}")
 
 

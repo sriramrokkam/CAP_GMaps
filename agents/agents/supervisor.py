@@ -24,6 +24,7 @@ If the latest message is a short follow-up ("yes", "yes please", "ok", "go ahead
 Examples:
 "assign delivery 80000015 to Sriram" → driver
 "can you assign the delivery to Driver Sriram?" → driver
+"can you assign Agent Test Driver to this delivery?" → driver
 "QR code for delivery 80000010" → driver
 "confirm delivery 80000015" → driver
 "free drivers" → driver
@@ -72,10 +73,14 @@ def parse_input(state: SupervisorState) -> dict:
 def classify(state: SupervisorState) -> dict:
     human_msgs = [m for m in state["messages"] if m.type == "human"]
     last_msg = human_msgs[-1].content if human_msgs else ""
-    # Pass up to 3 prior human messages as context for short follow-ups
     prior = human_msgs[-11:-1] if len(human_msgs) > 1 else []
     context = "\n".join(f"- {m.content}" for m in prior) if prior else "(none)"
     resp = _llm.invoke(ROUTE_PROMPT.format(message=last_msg, context=context))
+    # Extract only the first word so stray LLM output doesn't pollute state
+    first_word = resp.content.strip().split()[0].lower() if resp.content.strip() else "delivery"
+    if first_word not in ("delivery", "driver", "route"):
+        first_word = "delivery"
+    resp.content = first_word
     return {"messages": [resp]}
 
 
@@ -90,20 +95,30 @@ def _user_messages(state: SupervisorState) -> list:
     return [m for m in state["messages"] if m.type == "human"]
 
 
+def _conversation_messages(state: SupervisorState) -> list:
+    """Return full conversation excluding the classify AIMessage (single classification word)."""
+    msgs = []
+    for m in state["messages"]:
+        if m.type == "ai" and m.content.strip().lower() in ("delivery", "driver", "route"):
+            continue
+        msgs.append(m)
+    return msgs or state["messages"][:1]
+
+
 def run_delivery(state: SupervisorState) -> dict:
-    msgs = _user_messages(state) or state["messages"][:1]
+    msgs = _conversation_messages(state)
     result = _delivery_agent.invoke({"messages": msgs})
     return {"messages": result["messages"]}
 
 
 def run_driver(state: SupervisorState) -> dict:
-    msgs = _user_messages(state) or state["messages"][:1]
+    msgs = _conversation_messages(state)
     result = _driver_agent.invoke({"messages": msgs})
     return {"messages": result["messages"]}
 
 
 async def run_route(state: SupervisorState) -> dict:
-    msgs = _user_messages(state) or state["messages"][:1]
+    msgs = _conversation_messages(state)
     result = await _route_agent.ainvoke({"messages": msgs})
     return {"messages": result["messages"]}
 

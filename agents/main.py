@@ -58,7 +58,7 @@ app = FastAPI(title="Dispatch Agents", lifespan=lifespan)
 
 
 class ChatRequest(BaseModel):
-    thread_id: str
+    thread_id: str | None = None
     message: str
     confirm: bool | None = None
 
@@ -175,7 +175,8 @@ def index():
 
 @app.post("/chat", response_model=ChatResponse)
 async def chat(req: ChatRequest):
-    config = {"configurable": {"thread_id": req.thread_id}}
+    thread_id = req.thread_id or "default"
+    config = {"configurable": {"thread_id": thread_id}}
 
     # Check if graph is interrupted (awaiting confirmation)
     state = await _graph.aget_state(config)
