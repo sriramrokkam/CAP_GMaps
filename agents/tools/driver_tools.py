@@ -1,9 +1,30 @@
 from langchain_core.tools import tool
 from tools.odata_client import ODataClient, build_filter
 from config import settings
+import os
+import httpx
 
 
 _client = ODataClient(settings)
+
+
+def _reverse_geocode(lat: float, lng: float) -> str:
+    """Return a human-readable address for coordinates, or 'lat,lng' if unavailable."""
+    api_key = os.environ.get("GOOGLE_MAPS_API_KEY", "")
+    if not api_key or lat is None or lng is None:
+        return f"{lat}, {lng}"
+    try:
+        resp = httpx.get(
+            "https://maps.googleapis.com/maps/api/geocode/json",
+            params={"latlng": f"{lat},{lng}", "key": api_key},
+            timeout=10,
+        )
+        results = resp.json().get("results", [])
+        if results:
+            return results[0].get("formatted_address", f"{lat}, {lng}")
+    except Exception:
+        pass
+    return f"{lat}, {lng}"
 
 
 # ── Read tools ──
@@ -132,11 +153,16 @@ def get_driver_status(assignment_id: str) -> str:
         data = _client.get(f"/odata/v4/tracking/getAssignment(assignmentId={assignment_id})")
     except Exception as e:
         return f"Could not get assignment: {e}"
+    lat = data.get('CurrentLat')
+    lng = data.get('CurrentLng')
+    location = _reverse_geocode(lat, lng) if lat and lng else "Unknown"
+    eta = data.get('EstimatedDuration', '?')
     return (f"Driver: {data.get('DriverName', '?')} | Status: {data.get('Status', '?')} | "
             f"Delivery: {data.get('DeliveryDocument', '?')} | Truck: {data.get('TruckRegistration', '?')} | "
             f"Assigned: {data.get('AssignedAt', '?')} | "
-            f"Current GPS: {data.get('CurrentLat', '?')}, {data.get('CurrentLng', '?')} | "
-            f"Speed: {data.get('CurrentSpeed', '?')} | Last GPS: {data.get('LastGpsAt', '?')}")
+            f"Current Location: {location} | "
+            f"Speed: {data.get('CurrentSpeed', '?')} km/h | Last GPS: {data.get('LastGpsAt', '?')} | "
+            f"Estimated delivery time remaining: {eta}")
 
 
 @tool
@@ -146,7 +172,10 @@ def get_live_location(assignment_id: str) -> str:
         data = _client.get(f"/odata/v4/tracking/latestGps(assignmentId={assignment_id})")
     except Exception as e:
         return f"Could not get location: {e}"
-    return (f"Last GPS: Lat {data.get('Latitude', '?')}, Lng {data.get('Longitude', '?')} | "
+    lat = data.get('Latitude')
+    lng = data.get('Longitude')
+    location = _reverse_geocode(lat, lng) if lat and lng else "Unknown"
+    return (f"Current Location: {location} | "
             f"Speed: {data.get('Speed', '?')} m/s | Updated: {data.get('LastGpsAt', '?')}")
 
 
@@ -213,8 +242,9 @@ def confirm_delivery(assignment_id: str) -> str:
 
 @tool
 def get_qr_code(delivery_doc: str) -> str:
-    """Get QR code data for a delivery's active driver assignment (for mobile tracking app).
-    Pass the DeliveryDocument number — the tool resolves the active assignment internally."""
+    """Get QR code image and tracking link for a delivery's active driver assignment.
+    Pass the DeliveryDocument number — the tool resolves the active assignment internally.
+    Returns a markdown image tag so the QR code is rendered visually."""
     try:
         data = _client.get("/odata/v4/tracking/DriverAssignment", {
             "$filter": f"DeliveryDocument eq '{delivery_doc}' and Status ne 'DELIVERED'",
@@ -223,8 +253,18 @@ def get_qr_code(delivery_doc: str) -> str:
         assignments = data.get("value", [])
         if not assignments:
             return f"No active assignment found for delivery {delivery_doc}."
-        assignment_id = assignments[0]["ID"]
-        qr = _client.post("/odata/v4/tracking/getQRCode", {"assignmentId": assignment_id})
-        return f"QR Code for delivery {delivery_doc} (assignment {assignment_id}): {str(qr)[:200]}"
+        a = assignments[0]
+        qr_image = a.get("QRCodeImage", "")
+        qr_url = a.get("QRCodeUrl", "")
+        if not qr_image and not qr_url:
+            return f"Assignment {a['ID']} exists but has no QR code yet."
+        absolute_url = f"{settings.cap_base_url}{qr_url}" if qr_url else ""
+        result = (f"**QR Code for delivery {delivery_doc}**\n"
+                  f"Driver: {a.get('DriverName', '?')} | Assignment: {a['ID']}\n\n")
+        if qr_image:
+            result += f"![QR Code]({qr_image})\n\n"
+        if absolute_url:
+            result += f"Tracking link: {absolute_url}"
+        return result
     except Exception as e:
         return f"Could not get QR code: {e}"
