@@ -26,6 +26,9 @@ def _reverse_geocode(lat: float, lng: float) -> str:
         pass
     return f"{lat}, {lng}"
 
+
+# ── Read tools ──
+
 @tool
 def list_free_drivers(top: int = 20) -> str:
     """List drivers with no active delivery — i.e. 'free' or 'available' drivers.
@@ -255,7 +258,6 @@ def get_qr_code(delivery_doc: str) -> str:
         qr_url = a.get("QRCodeUrl", "")
         if not qr_image and not qr_url:
             return f"Assignment {a['ID']} exists but has no QR code yet."
-        # Build absolute tracking URL from the relative QRCodeUrl
         absolute_url = f"{settings.cap_base_url}{qr_url}" if qr_url else ""
         result = (f"**QR Code for delivery {delivery_doc}**\n"
                   f"Driver: {a.get('DriverName', '?')} | Assignment: {a['ID']}\n\n")
