@@ -742,9 +742,6 @@
         <mxCell id="aJMonnEn3ApX9KzHcOPC-63" parent="aJMonnEn3ApX9KzHcOPC-1" style="shape=mxgraph.sap.icon;labelPosition=center;verticalLabelPosition=bottom;align=center;verticalAlign=top;strokeWidth=1;strokeColor=#D5DADD;fillColor=#EDEFF0;gradientColor=#FCFCFC;gradientDirection=west;aspect=fixed;SAPIcon=Intelligent_Situation_Automation" value="" vertex="1">
           <mxGeometry height="50" width="50" x="612" y="1669.55" as="geometry" />
         </mxCell>
-        <mxCell id="aJMonnEn3ApX9KzHcOPC-64" parent="aJMonnEn3ApX9KzHcOPC-1" style="shape=mxgraph.sap.icon;labelPosition=center;verticalLabelPosition=bottom;align=center;verticalAlign=top;strokeWidth=1;strokeColor=#D5DADD;fillColor=#EDEFF0;gradientColor=#FCFCFC;gradientDirection=west;aspect=fixed;SAPIcon=SAP_Application_Logging_service_for_SAP_BTP" value="" vertex="1">
-          <mxGeometry height="50" width="50" x="665.25" y="1670" as="geometry" />
-        </mxCell>
         <mxCell id="aJMonnEn3ApX9KzHcOPC-65" parent="aJMonnEn3ApX9KzHcOPC-1" style="shape=mxgraph.sap.icon;labelPosition=center;verticalLabelPosition=bottom;align=center;verticalAlign=top;strokeWidth=1;strokeColor=#D5DADD;fillColor=#EDEFF0;gradientColor=#FCFCFC;gradientDirection=west;aspect=fixed;SAPIcon=SAP_Event_Broker_for_SAP_Cloud_Applications" value="" vertex="1">
           <mxGeometry height="130.95" width="130.95" x="1218" y="1570.05" as="geometry" />
         </mxCell>
