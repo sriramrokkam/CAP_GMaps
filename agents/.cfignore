@@ -34,3 +34,7 @@ htmlcov/
 
 # OS
 .DS_Store
+
+# Node.js — MCP server installed by CF buildpack at deploy time, not pushed from local
+node_modules/
+package-lock.json
