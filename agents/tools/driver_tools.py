@@ -213,8 +213,9 @@ def confirm_delivery(assignment_id: str) -> str:
 
 @tool
 def get_qr_code(delivery_doc: str) -> str:
-    """Get QR code data for a delivery's active driver assignment (for mobile tracking app).
-    Pass the DeliveryDocument number — the tool resolves the active assignment internally."""
+    """Get QR code image and tracking link for a delivery's active driver assignment.
+    Pass the DeliveryDocument number — the tool resolves the active assignment internally.
+    Returns a markdown image tag so the QR code is rendered visually."""
     try:
         data = _client.get("/odata/v4/tracking/DriverAssignment", {
             "$filter": f"DeliveryDocument eq '{delivery_doc}' and Status ne 'DELIVERED'",
@@ -223,8 +224,19 @@ def get_qr_code(delivery_doc: str) -> str:
         assignments = data.get("value", [])
         if not assignments:
             return f"No active assignment found for delivery {delivery_doc}."
-        assignment_id = assignments[0]["ID"]
-        qr = _client.post("/odata/v4/tracking/getQRCode", {"assignmentId": assignment_id})
-        return f"QR Code for delivery {delivery_doc} (assignment {assignment_id}): {str(qr)[:200]}"
+        a = assignments[0]
+        qr_image = a.get("QRCodeImage", "")
+        qr_url = a.get("QRCodeUrl", "")
+        if not qr_image and not qr_url:
+            return f"Assignment {a['ID']} exists but has no QR code yet."
+        # Build absolute tracking URL from the relative QRCodeUrl
+        absolute_url = f"{settings.cap_base_url}{qr_url}" if qr_url else ""
+        result = (f"**QR Code for delivery {delivery_doc}**\n"
+                  f"Driver: {a.get('DriverName', '?')} | Assignment: {a['ID']}\n\n")
+        if qr_image:
+            result += f"![QR Code]({qr_image})\n\n"
+        if absolute_url:
+            result += f"Tracking link: {absolute_url}"
+        return result
     except Exception as e:
         return f"Could not get QR code: {e}"

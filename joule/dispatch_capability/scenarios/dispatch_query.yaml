@@ -1,9 +1,13 @@
 description: >-
-  Handles dispatch operations including listing EWM outbound deliveries,
-  checking delivery status, assigning drivers to deliveries, tracking
-  GPS locations of drivers, confirming deliveries as completed, and
-  querying Google Maps routes between addresses. Use this for any
-  question about deliveries, drivers, assignments, routes, or logistics.
+  Handles all dispatch operations for EWM outbound deliveries and driver management.
+  Use this scenario for ANY of the following requests:
+  - Listing deliveries: "show deliveries", "free deliveries", "unassigned deliveries", "what deliveries are open"
+  - Assigning drivers: "assign driver", "assign [name] to delivery", "can you assign [delivery] to [driver]"
+  - Driver queries: "free drivers", "available drivers", "list drivers", "who is driving", "driver status"
+  - Tracking: "where is driver", "GPS location", "track delivery", "is delivery in transit"
+  - Confirming deliveries: "confirm delivery", "mark as delivered", "delivery complete"
+  - Routes: "get route", "directions", "how far", "Google Maps route"
+  - Any question about deliveries, drivers, assignments, routes, or logistics operations.
 target:
   type: function
   name: dispatch
