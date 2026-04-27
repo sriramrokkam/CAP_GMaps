@@ -1,0 +1,8 @@
+{
+  "name": "gmaps-dispatch-agents",
+  "version": "1.0.0",
+  "description": "Node.js MCP server dependencies for gmaps-dispatch-agents CF app",
+  "dependencies": {
+    "@modelcontextprotocol/server-google-maps": "0.6.2"
+  }
+}

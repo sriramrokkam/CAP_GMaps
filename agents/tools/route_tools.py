@@ -55,3 +55,19 @@ def get_route_steps(route_id: str) -> str:
         return "No steps found."
     lines = [f"{s.get('stepNumber','?')}. {s.get('instruction','?')} ({s.get('distance','?')})" for s in steps]
     return "\n".join(lines)
+
+
+@tool
+def get_last_known_location(assignment_id: str) -> str:
+    """Get the last known GPS coordinates for a driver assignment.
+    Use list_assignments() from the driver agent to find an assignment UUID.
+    Returns lat/lng suitable for passing to maps_search_places or maps_get_directions."""
+    try:
+        data = _client.get(f"/odata/v4/tracking/latestGps(assignmentId={assignment_id})")
+    except Exception as e:
+        return f"Could not get location: {e}"
+    lat = data.get("Latitude", "?")
+    lng = data.get("Longitude", "?")
+    speed = data.get("Speed", "?")
+    updated = data.get("LastGpsAt", "?")
+    return f"Lat: {lat}, Lng: {lng} | Speed: {speed} m/s | Updated: {updated} | Coords for maps: {lat},{lng}"

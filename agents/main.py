@@ -11,6 +11,9 @@ import httpx
 
 from agents.supervisor import graph
 from agents.monitor_agent import run_all_checks
+from agents.route_agent import build_route_agent
+from agents.supervisor import set_route_agent
+from mcp_client import load_mcp_tools
 from config import settings
 from tools.odata_client import ODataClient
 from langchain_core.messages import HumanMessage
@@ -28,6 +31,12 @@ _monitor_state = {"last_run": None, "next_run": None, "status": "stopped"}
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global _scheduler
+
+    # Load Google Maps MCP tools and rebuild route agent with them
+    mcp_tools = await load_mcp_tools()
+    if mcp_tools:
+        set_route_agent(build_route_agent(mcp_tools))
+
     _scheduler = BackgroundScheduler()
 
     def _run():
@@ -165,16 +174,16 @@ def index():
 
 
 @app.post("/chat", response_model=ChatResponse)
-def chat(req: ChatRequest):
+async def chat(req: ChatRequest):
     config = {"configurable": {"thread_id": req.thread_id}}
 
     # Check if graph is interrupted (awaiting confirmation)
-    state = _graph.get_state(config)
+    state = await _graph.aget_state(config)
     if state.tasks and any(t.interrupts for t in state.tasks):
         if req.confirm is True:
-            result = _graph.invoke(Command(resume=True), config=config)
+            result = await _graph.ainvoke(Command(resume=True), config=config)
         else:
-            result = _graph.invoke(
+            result = await _graph.ainvoke(
                 {"message": "Action cancelled by user."},
                 config=config,
             )
@@ -182,13 +191,13 @@ def chat(req: ChatRequest):
         return ChatResponse(reply=last_msg)
 
     # Normal message — invoke graph (pass via UserInput schema)
-    result = _graph.invoke(
+    result = await _graph.ainvoke(
         {"message": req.message},
         config=config,
     )
 
     # Check if graph is now interrupted after invocation
-    state = _graph.get_state(config)
+    state = await _graph.aget_state(config)
     pending = None
     if state.tasks and any(t.interrupts for t in state.tasks):
         for task in state.tasks:

@@ -22,6 +22,12 @@ _route_agent = build_route_agent()
 _llm = get_llm()
 
 
+def set_route_agent(agent) -> None:
+    """Replace the route agent with one that has MCP tools loaded. Called from main.py lifespan."""
+    global _route_agent
+    _route_agent = agent
+
+
 class UserInput(TypedDict):
     """Input schema for LangGraph Studio — type your message here."""
     message: str
@@ -67,9 +73,9 @@ def run_driver(state: SupervisorState) -> dict:
     return {"messages": result["messages"]}
 
 
-def run_route(state: SupervisorState) -> dict:
+async def run_route(state: SupervisorState) -> dict:
     msgs = _user_messages(state) or state["messages"][:1]
-    result = _route_agent.invoke({"messages": msgs})
+    result = await _route_agent.ainvoke({"messages": msgs})
     return {"messages": result["messages"]}
 
 

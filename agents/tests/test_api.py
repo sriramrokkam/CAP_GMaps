@@ -1,10 +1,9 @@
 import sys
 import pytest
 from fastapi.testclient import TestClient
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, AsyncMock
 
-# gen_ai_hub is not installed in the test environment; stub it before any module
-# that transitively imports it (agents.supervisor → delivery_agent → ai_core).
+# Stub gen_ai_hub before any import that pulls it transitively
 _gen_ai_hub_mock = MagicMock()
 for _mod in [
     "gen_ai_hub",
@@ -20,16 +19,23 @@ for _mod in [
 @pytest.fixture
 def client():
     mock_graph = MagicMock()
-    mock_graph.invoke.return_value = {
+    mock_graph.checkpointer = None
+    mock_state = MagicMock()
+    mock_state.tasks = []
+    mock_graph.aget_state = AsyncMock(return_value=mock_state)
+    mock_graph.ainvoke = AsyncMock(return_value={
         "messages": [MagicMock(content="3 open deliveries found.")],
-        "pending_action": None,
-    }
-    with patch("agents.supervisor.build_supervisor", return_value=(mock_graph, MagicMock())), \
+    })
+    mock_graph.copy = MagicMock(return_value=mock_graph)
+
+    with patch("agents.supervisor.graph", mock_graph), \
+         patch("mcp_client.load_mcp_tools", new_callable=AsyncMock, return_value=[]), \
          patch("agents.monitor_agent.run_all_checks"), \
-         patch("tools.teams_tools.post_teams_alert"), \
          patch("apscheduler.schedulers.background.BackgroundScheduler"):
-        from main import app
-        with TestClient(app) as tc:
+        import importlib
+        import main as main_mod
+        importlib.reload(main_mod)
+        with TestClient(main_mod.app) as tc:
             yield tc
 
 
