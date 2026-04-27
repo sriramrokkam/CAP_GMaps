@@ -35,6 +35,9 @@ venv/
 *.mtar
 mta_archives/
 
+# Git worktrees
+.worktrees/
+
 # Other
 .DS_Store
 *.orig
