@@ -30,12 +30,22 @@ curl http://localhost:8000/health
 
 ```
 UserInput.message → parse_input → classify (LLM) → route_message
-                                                      ├── DeliveryAgent (4 read tools)
-                                                      ├── DriverAgent (6 tools, HiTL interrupt)
-                                                      └── RouteAgent (3 read tools)
+                                                      ├── DeliveryAgent (3 read tools)
+                                                      ├── DriverAgent (9 tools: 4 read + 5 write)
+                                                      └── RouteAgent (4 built-in + Google Maps MCP tools)
 
 Background: MonitorAgent (APScheduler → Teams webhook)
 ```
+
+### Tool Design
+
+Tools use flexible filter parameters instead of rigid single-purpose variants. The `build_filter()` helper in `odata_client.py` constructs OData `$filter` strings from `exact={}` and `contains={}` dicts. Example: `list_deliveries(status='unassigned', route='TR0002')` generates the appropriate OData filter.
+
+### MCP Integration
+
+RouteAgent loads Google Maps MCP tools (geocode, directions, places, reverse geocode) at startup via `mcp_client.py`. The MCP server (`@modelcontextprotocol/server-google-maps`) runs as a stdio subprocess. If `GOOGLE_MAPS_API_KEY` is missing or the server fails, RouteAgent degrades gracefully to its 4 built-in tools.
+
+**Async requirement**: MCP tools are async-only. The chain `async /chat endpoint → await graph.ainvoke() → async run_route() → await route_agent.ainvoke()` must be fully async.
 
 ### Graph Input Schema
 
