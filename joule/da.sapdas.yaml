@@ -1,0 +1,5 @@
+schema_version: 1.0.0
+name: gmaps_od_dispatch_agent
+capabilities:
+  - type: local
+    folder: ./dispatch_capability

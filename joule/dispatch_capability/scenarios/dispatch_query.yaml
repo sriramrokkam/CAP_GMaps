@@ -1,0 +1,15 @@
+description: >-
+  Handles dispatch operations including listing EWM outbound deliveries,
+  checking delivery status, assigning drivers to deliveries, tracking
+  GPS locations of drivers, confirming deliveries as completed, and
+  querying Google Maps routes between addresses. Use this for any
+  question about deliveries, drivers, assignments, routes, or logistics.
+target:
+  type: function
+  name: dispatch
+response_context:
+  - value: $target_result.reply
+    description: Agent response to the dispatch query
+capability_context:
+  - name: thread_id
+    value: $target_result.thread_id

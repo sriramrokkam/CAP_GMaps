@@ -175,15 +175,15 @@ def chat(req: ChatRequest):
             result = _graph.invoke(Command(resume=True), config=config)
         else:
             result = _graph.invoke(
-                {"messages": [HumanMessage(content="Action cancelled by user.")]},
+                {"message": "Action cancelled by user."},
                 config=config,
             )
         last_msg = result["messages"][-1].content if result.get("messages") else "No response."
         return ChatResponse(reply=last_msg)
 
-    # Normal message — invoke graph
+    # Normal message — invoke graph (pass via UserInput schema)
     result = _graph.invoke(
-        {"messages": [HumanMessage(content=req.message)]},
+        {"message": req.message},
         config=config,
     )
 

@@ -1,0 +1,31 @@
+parameters:
+  - name: user_message
+    optional: true
+action_groups:
+  - actions:
+      - type: status-update
+        message: Processing your request...
+      - type: set-variables
+        variables:
+          - name: msg
+            value: "<? user_message != null ? user_message : $transient.input.text.raw ?>"
+      - type: set-variables
+        variables:
+          - name: tid
+            value: "<? $capability_context.thread_id != null ? $capability_context.thread_id : $transient.user.id ?>"
+      - type: api-request
+        method: POST
+        system_alias: GMaps_OD_Dispatch_Agent
+        path: /chat
+        headers:
+          Content-Type: application/json
+        body: >
+          {
+            "thread_id": "<? tid ?>",
+            "message": "<? msg ?>"
+          }
+        timeout: 45
+        result_variable: chat_result
+result:
+  reply: "<? chat_result.body.reply ?>"
+  thread_id: "<? tid ?>"

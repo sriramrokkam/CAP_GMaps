@@ -1,0 +1,21 @@
+# After cf push, run: bash cf_set_env.sh && cf restart gmaps-dispatch-agents
+# Secrets (AICORE_*, XSUAA_*, TEAMS_WEBHOOK_URL, LANGCHAIN_API_KEY) live in
+# cf set-env, NOT in this file. See cf_set_env.sh for the full list.
+---
+applications:
+  - name: gmaps-dispatch-agents
+    path: .
+    buildpacks:
+      - python_buildpack
+    memory: 512M
+    disk_quota: 512M
+    instances: 1
+    command: uvicorn main:app --host 0.0.0.0 --port $PORT
+    env:
+      PYTHONPATH: .
+      CAP_BASE_URL: https://s4hanad-s-sap-build-training-hcd2uswp-dev-gmaps-app-srv.cfapps.us10.hana.ondemand.com
+      MONITOR_POLL_INTERVAL_SEC: 1800
+      UNASSIGNED_THRESHOLD_MIN: 30
+      IDLE_THRESHOLD_MIN: 20
+      LANGCHAIN_TRACING_V2: true
+      LANGCHAIN_PROJECT: gmaps-dispatch-agents

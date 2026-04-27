@@ -1,0 +1,12 @@
+schema_version: 3.6.0
+metadata:
+  display_name: GMaps OD Dispatch Agent
+  namespace: com.sap.dispatch
+  name: gmaps_od_dispatch
+  version: 1.0.0-SNAPSHOT
+  description: >-
+    Dispatch assistant for managing EWM deliveries, driver assignments,
+    GPS tracking, and Google Maps routes via natural language.
+system_aliases:
+  GMaps_OD_Dispatch_Agent:
+    destination: GMaps_OD_Dispatch_Agent

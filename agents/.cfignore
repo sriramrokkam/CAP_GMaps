@@ -1,0 +1,36 @@
+# Python virtual environments
+.venv/
+.venv-studio/
+venv/
+env/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Local environment secrets
+.env
+
+# LangGraph / LangSmith
+.langgraph_cache/
+langgraph_studio.png
+
+# Development tools
+.git/
+.gitignore
+*.md
+
+# IDE
+.vscode/
+.idea/
+
+# Test artifacts
+.pytest_cache/
+htmlcov/
+.coverage
+
+# OS
+.DS_Store
