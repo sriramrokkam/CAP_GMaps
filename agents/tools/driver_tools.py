@@ -268,7 +268,7 @@ def confirm_delivery(assignment_id: str) -> str:
     try:
         # Fetch assignment before confirming to capture current GPS and delivery doc
         assignment_data = _client.get("/odata/v4/tracking/DriverAssignment", {
-            "$filter": f"ID eq {assignment_id}",
+            "$filter": f"ID eq '{assignment_id}'",
             "$top": "1",
         }).get("value", [])
         current_lat = None
@@ -288,34 +288,29 @@ def confirm_delivery(assignment_id: str) -> str:
         # Geofence check: compare driver's GPS against expected delivery destination
         if current_lat and current_lng and delivery_doc and delivery_doc != "?":
             try:
-                route_dirs = _client.get("/odata/v4/gmaps/RouteDirections", {
-                    "$filter": f"route/deliveryDoc eq '{delivery_doc}'",
-                    "$select": "destination",
-                    "$top": "1",
-                }).get("value", [])
-                if route_dirs:
-                    destination = route_dirs[0].get("destination", "")
-                    coords = _geocode_address(destination) if destination else None
-                    if coords:
-                        dest_lat, dest_lng = coords
-                        distance_m = _haversine_meters(current_lat, current_lng, dest_lat, dest_lng)
-                        radius = settings.geofence_radius_meters
-                        if distance_m > radius:
-                            dist_km = distance_m / 1000
-                            actual_location = _reverse_geocode(current_lat, current_lng)
-                            alert_msg = (
-                                f"Driver **{driver_name}** confirmed delivery **{delivery_doc}** "
-                                f"at the wrong location.\n\n"
-                                f"**Actual location:** {actual_location}\n"
-                                f"**Expected destination:** {destination}\n"
-                                f"**Distance from expected:** {dist_km:.2f} km "
-                                f"(threshold: {radius}m)"
-                            )
-                            post_teams_alert(alert_msg, title="⚠️ Delivery Location Mismatch")
-                            result += (
-                                f" ⚠️ Warning: driver was {dist_km:.2f} km from the expected "
-                                f"destination ({destination}). A Teams alert has been sent."
-                            )
+                route_data = _client.post("/odata/v4/ewm/getDeliveryRoute", {"deliveryDoc": delivery_doc})
+                destination = route_data.get("destination", "") if route_data else ""
+                coords = _geocode_address(destination) if destination else None
+                if coords:
+                    dest_lat, dest_lng = coords
+                    distance_m = _haversine_meters(current_lat, current_lng, dest_lat, dest_lng)
+                    radius = settings.geofence_radius_meters
+                    if distance_m > radius:
+                        dist_km = distance_m / 1000
+                        actual_location = _reverse_geocode(current_lat, current_lng)
+                        alert_msg = (
+                            f"Driver **{driver_name}** confirmed delivery **{delivery_doc}** "
+                            f"at the wrong location.\n\n"
+                            f"**Actual location:** {actual_location}\n"
+                            f"**Expected destination:** {destination}\n"
+                            f"**Distance from expected:** {dist_km:.2f} km "
+                            f"(threshold: {radius}m)"
+                        )
+                        post_teams_alert(alert_msg, title="⚠️ Delivery Location Mismatch")
+                        result += (
+                            f" ⚠️ Warning: driver was {dist_km:.2f} km from the expected "
+                            f"destination ({destination}). A Teams alert has been sent."
+                        )
             except Exception:
                 pass  # Geofence check is best-effort; never block delivery confirmation
 
