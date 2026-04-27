@@ -2,7 +2,7 @@ import os
 import httpx
 from dotenv import load_dotenv
 from langchain_core.tools import tool
-from tools.odata_client import ODataClient
+from tools.odata_client import ODataClient, build_filter
 from config import settings
 
 load_dotenv()
@@ -15,7 +15,7 @@ def get_directions(origin: str, destination: str) -> str:
     """Get Google Maps driving directions between two addresses. Returns distance, duration, and route summary."""
     api_key = os.environ.get("GOOGLE_MAPS_API_KEY", "")
     if not api_key:
-        return "GOOGLE_MAPS_API_KEY not set. Try list_all_routes() to see stored routes."
+        return "GOOGLE_MAPS_API_KEY not set. Try list_routes() to see stored routes."
     try:
         resp = httpx.get(
             "https://maps.googleapis.com/maps/api/directions/json",
@@ -29,23 +29,33 @@ def get_directions(origin: str, destination: str) -> str:
         return (f"Route: {leg['start_address']} → {leg['end_address']} | "
                 f"Distance: {leg['distance']['text']} | Duration: {leg['duration']['text']}")
     except Exception as e:
-        return f"Could not get directions: {e}. Try list_all_routes() to see stored routes."
+        return f"Could not get directions: {e}. Try list_routes() to see stored routes."
 
 
 @tool
-def list_all_routes() -> str:
-    """List all stored route directions from the CAP database."""
-    data = _client.get("/odata/v4/gmaps/RouteDirections", {"$orderby": "createdAt desc", "$top": "10"})
-    routes = data.get("value", [])
-    if not routes:
-        return "No routes stored."
-    lines = [f"- {r.get('origin','?')} → {r.get('destination','?')} | {r.get('distance','?')} | {r.get('duration','?')}" for r in routes]
-    return f"{len(routes)} routes:\n" + "\n".join(lines)
+def list_routes(origin: str = "", destination: str = "", top: int = 10) -> str:
+    """List stored route directions from the CAP database with optional filters.
+    - origin: partial match on origin address (e.g. 'New York')
+    - destination: partial match on destination address (e.g. 'Atlanta')
+    - top: max results (default 10)"""
+    try:
+        f = build_filter(contains={"origin": origin or None, "destination": destination or None})
+        params = {"$orderby": "createdAt desc", "$top": str(top)}
+        if f:
+            params["$filter"] = f
+        data = _client.get("/odata/v4/gmaps/RouteDirections", params)
+        routes = data.get("value", [])
+        if not routes:
+            return "No routes match the given filters."
+        lines = [f"- ID: {r.get('ID', '?')} | {r.get('origin', '?')} → {r.get('destination', '?')} | {r.get('distance', '?')} | {r.get('duration', '?')}" for r in routes]
+        return f"{len(routes)} routes:\n" + "\n".join(lines)
+    except Exception as e:
+        return f"Could not list routes: {e}"
 
 
 @tool
 def get_route_steps(route_id: str) -> str:
-    """Get turn-by-turn directions for a route. Pass a route UUID from list_all_routes()."""
+    """Get turn-by-turn directions for a route. Pass a route UUID from list_routes()."""
     try:
         data = _client.get(f"/odata/v4/gmaps/RouteDirections({route_id})/steps", {"$orderby": "stepNumber asc"})
     except Exception as e:

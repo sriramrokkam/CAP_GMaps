@@ -2,6 +2,26 @@ import time
 import httpx
 
 
+def build_filter(exact: dict | None = None, contains: dict | None = None) -> str:
+    """Build an OData $filter string from exact-match and contains-match dicts.
+    None values are skipped. Returns empty string if no filters apply."""
+    parts = []
+    for key, val in (exact or {}).items():
+        if val is None:
+            continue
+        if isinstance(val, bool):
+            parts.append(f"{key} eq {str(val).lower()}")
+        elif isinstance(val, str):
+            parts.append(f"{key} eq '{val}'")
+        else:
+            parts.append(f"{key} eq {val}")
+    for key, val in (contains or {}).items():
+        if val is None:
+            continue
+        parts.append(f"contains({key},'{val}')")
+    return " and ".join(parts)
+
+
 class ODataClient:
     def __init__(self, settings):
         self._settings = settings

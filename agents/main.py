@@ -258,7 +258,7 @@ def health():
             },
         },
         "tools": {
-            "list_open_deliveries": _probe_connection("list_open_deliveries", lambda: client.get("/odata/v4/ewm/OutboundDeliveries", {"$top": "1"})),
+            "list_deliveries": _probe_connection("list_deliveries", lambda: client.get("/odata/v4/ewm/OutboundDeliveries", {"$top": "1"})),
             "list_drivers": _probe_connection("list_drivers", lambda: client.get("/odata/v4/tracking/Driver", {"$top": "1"})),
             "get_live_location": "ok",
             "get_route_for_delivery": "ok",

@@ -2,7 +2,7 @@ from langgraph.prebuilt import create_react_agent
 from langchain_core.messages import SystemMessage
 from tools.route_tools import (
     get_directions,
-    list_all_routes,
+    list_routes,
     get_route_steps,
     get_last_known_location,
 )
@@ -10,11 +10,13 @@ from ai_core import get_llm
 
 SYSTEM = SystemMessage(content="""You are the RouteAgent. You provide Google Maps route information.
 
-Standard capabilities:
-- Get driving directions between two addresses
-- List stored routes from the database
-- Show turn-by-turn steps for a stored route
-- Get a driver's last known GPS coordinates from the database
+Tools:
+- get_directions: get driving directions between two addresses or coordinates
+- list_routes: list stored routes with optional filters — origin (partial match), destination (partial match), top
+  "routes from New York" → list_routes(origin="New York")
+  "routes to Atlanta" → list_routes(destination="Atlanta")
+- get_route_steps: turn-by-turn steps for a route UUID from list_routes()
+- get_last_known_location: get driver's GPS coords from assignment UUID
 
 Google Maps MCP capabilities (when available):
 - Search for places near a location (fuel stations, warehouses, rest stops, etc.)
@@ -31,7 +33,7 @@ You are read-only — you cannot modify any data. Show distances, durations, and
 def build_route_agent(mcp_tools: list | None = None):
     tools = [
         get_directions,
-        list_all_routes,
+        list_routes,
         get_route_steps,
         get_last_known_location,
     ] + (mcp_tools or [])
