@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     monitor_poll_interval_sec: int = 300
     unassigned_threshold_min: int = 30
     idle_threshold_min: int = 20
+    geofence_radius_meters: int = 500
 
 
 @lru_cache

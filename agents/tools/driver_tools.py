@@ -1,7 +1,9 @@
 from langchain_core.tools import tool
 from tools.odata_client import ODataClient, build_filter
+from tools.teams_tools import post_teams_alert
 from config import settings
 import os
+import math
 import httpx
 
 
@@ -25,6 +27,36 @@ def _reverse_geocode(lat: float, lng: float) -> str:
     except Exception:
         pass
     return f"{lat}, {lng}"
+
+
+def _geocode_address(address: str) -> tuple[float, float] | None:
+    """Convert a text address to (lat, lng) via Google Geocoding API. Returns None on failure."""
+    api_key = os.environ.get("GOOGLE_MAPS_API_KEY", "")
+    if not api_key or not address:
+        return None
+    try:
+        resp = httpx.get(
+            "https://maps.googleapis.com/maps/api/geocode/json",
+            params={"address": address, "key": api_key},
+            timeout=10,
+        )
+        results = resp.json().get("results", [])
+        if results:
+            loc = results[0]["geometry"]["location"]
+            return loc["lat"], loc["lng"]
+    except Exception:
+        pass
+    return None
+
+
+def _haversine_meters(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
+    """Return great-circle distance in metres between two GPS points."""
+    R = 6_371_000
+    phi1, phi2 = math.radians(lat1), math.radians(lat2)
+    dphi = math.radians(lat2 - lat1)
+    dlam = math.radians(lng2 - lng1)
+    a = math.sin(dphi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(dlam / 2) ** 2
+    return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
 
 # ── Read tools ──
@@ -234,8 +266,60 @@ def update_location(assignment_id: str, latitude: float, longitude: float, speed
 def confirm_delivery(assignment_id: str) -> str:
     """Confirm a delivery as completed. Sets status to DELIVERED and stamps end coordinates. This is a write action."""
     try:
+        # Fetch assignment before confirming to capture current GPS and delivery doc
+        assignment_data = _client.get("/odata/v4/tracking/DriverAssignment", {
+            "$filter": f"ID eq {assignment_id}",
+            "$top": "1",
+        }).get("value", [])
+        current_lat = None
+        current_lng = None
+        driver_name = "?"
+        delivery_doc = "?"
+        if assignment_data:
+            a = assignment_data[0]
+            current_lat = a.get("CurrentLat")
+            current_lng = a.get("CurrentLng")
+            driver_name = a.get("DriverName", "?")
+            delivery_doc = a.get("DeliveryDocument", "?")
+
         _client.post("/odata/v4/tracking/confirmDelivery", {"assignmentId": assignment_id})
-        return f"Delivery confirmed for assignment {assignment_id}."
+        result = f"Delivery confirmed for assignment {assignment_id}."
+
+        # Geofence check: compare driver's GPS against expected delivery destination
+        if current_lat and current_lng and delivery_doc and delivery_doc != "?":
+            try:
+                route_dirs = _client.get("/odata/v4/gmaps/RouteDirections", {
+                    "$filter": f"route/deliveryDoc eq '{delivery_doc}'",
+                    "$select": "destination",
+                    "$top": "1",
+                }).get("value", [])
+                if route_dirs:
+                    destination = route_dirs[0].get("destination", "")
+                    coords = _geocode_address(destination) if destination else None
+                    if coords:
+                        dest_lat, dest_lng = coords
+                        distance_m = _haversine_meters(current_lat, current_lng, dest_lat, dest_lng)
+                        radius = settings.geofence_radius_meters
+                        if distance_m > radius:
+                            dist_km = distance_m / 1000
+                            actual_location = _reverse_geocode(current_lat, current_lng)
+                            alert_msg = (
+                                f"Driver **{driver_name}** confirmed delivery **{delivery_doc}** "
+                                f"at the wrong location.\n\n"
+                                f"**Actual location:** {actual_location}\n"
+                                f"**Expected destination:** {destination}\n"
+                                f"**Distance from expected:** {dist_km:.2f} km "
+                                f"(threshold: {radius}m)"
+                            )
+                            post_teams_alert(alert_msg, title="⚠️ Delivery Location Mismatch")
+                            result += (
+                                f" ⚠️ Warning: driver was {dist_km:.2f} km from the expected "
+                                f"destination ({destination}). A Teams alert has been sent."
+                            )
+            except Exception:
+                pass  # Geofence check is best-effort; never block delivery confirmation
+
+        return result
     except Exception as e:
         return f"Could not confirm delivery: {e}"
 
