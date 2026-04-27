@@ -20,15 +20,19 @@ def list_deliveries(
     route: str = "",
     driver_name: str = "",
     ship_to: str = "",
+    goods_mvt_status: str = "",
+    billing_status: str = "",
     top: int = 20,
 ) -> str:
     """List outbound deliveries with optional filters.
-    - status: 'unassigned', 'assigned', 'in_transit', 'delivered', or 'open' (default: open + unassigned)
+    - status: driver/transit status — 'unassigned', 'assigned', 'in_transit', 'delivered', or 'open' (default: open + unassigned)
     - route: filter by ActualDeliveryRoute (e.g. 'TR0002')
     - driver_name: partial match on assigned driver name (e.g. 'Sriram')
     - ship_to: filter by ShipToParty (e.g. '17100001')
+    - goods_mvt_status: EWM goods movement incompletion status — 'C' (complete) or '' (incomplete)
+    - billing_status: EWM billing incompletion status — 'C' (complete) or '' (incomplete)
     - top: max results (default 20)
-    Returns delivery list with document number, ship-to, route, driver status, and driver name."""
+    Returns delivery list with document number, ship-to, route, driver status, goods mvt status, and driver name."""
     try:
         filters = []
         if status:
@@ -41,7 +45,12 @@ def list_deliveries(
             filters.append(f"({_STATUS_FILTERS['open']})")
 
         extra = build_filter(
-            exact={"ActualDeliveryRoute": route or None, "ShipToParty": ship_to or None},
+            exact={
+                "ActualDeliveryRoute": route or None,
+                "ShipToParty": ship_to or None,
+                "HdrGoodsMvtIncompletionStatus": goods_mvt_status or None,
+                "HeaderBillgIncompletionStatus": billing_status or None,
+            },
             contains={"DriverName": driver_name or None},
         )
         if extra:
@@ -58,7 +67,8 @@ def list_deliveries(
                 d["DeliveryDocument"],
                 f"Ship-To: {d.get('ShipToParty', '?')}",
                 f"Route: {d.get('ActualDeliveryRoute', '?')}",
-                f"Status: {d.get('DriverStatus', 'OPEN')}",
+                f"Driver: {d.get('DriverStatus', 'OPEN')}",
+                f"GoodsMvt: {d.get('HdrGoodsMvtIncompletionStatus', '?')}",
             ]
             if d.get("DriverName"):
                 parts.append(f"Driver: {d['DriverName']}")

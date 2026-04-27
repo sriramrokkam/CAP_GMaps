@@ -67,6 +67,8 @@ def test_list_deliveries_accepts_filters():
     assert "route" in props
     assert "driver_name" in props
     assert "ship_to" in props
+    assert "goods_mvt_status" in props
+    assert "billing_status" in props
     assert "top" in props
 
 
