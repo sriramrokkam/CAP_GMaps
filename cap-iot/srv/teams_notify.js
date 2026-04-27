@@ -87,6 +87,22 @@ const MESSAGES = {
         ])
     ], [
         d.LastLat ? { type: 'Action.OpenUrl', title: 'View Delivery Location', url: mapsLink(d.LastLat, d.LastLng) } : null
+    ].filter(Boolean)),
+
+    GEOFENCE_ALERT: (d) => adaptiveCard([
+        { type: 'TextBlock', text: '⚠️ Wrong Delivery Location', weight: 'Bolder', size: 'Medium', color: 'Attention' },
+        { type: 'TextBlock', text: `Driver confirmed delivery **${d.DeliveryDocument}** far from the expected destination.`, wrap: true },
+        factSet([
+            ['Driver',              d.DriverName || d.MobileNumber],
+            ['Truck',               d.TruckRegistration],
+            ['Customer',            d.ShipToParty],
+            ['Expected Destination',d.Destination],
+            ['Distance from Dest',  `${d.DistanceKm} km (threshold: ${d.ThresholdM} m)`],
+            ['Confirmed At',        fmtDate(d.DeliveredAt)],
+            ['Actual GPS',          d.CurrentLat && d.CurrentLng ? `${d.CurrentLat}, ${d.CurrentLng}` : null]
+        ])
+    ], [
+        d.CurrentLat ? { type: 'Action.OpenUrl', title: 'View Actual Location', url: mapsLink(d.CurrentLat, d.CurrentLng) } : null
     ].filter(Boolean))
 };
 

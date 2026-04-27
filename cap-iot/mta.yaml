@@ -143,11 +143,13 @@ resources:
                 ProxyType: Internet
                 Type: HTTP
                 URL: https://maps.googleapis.com
+                URL.queries.key: AIzaSyBpWRMjJ1vrCh8iOv3UghXU-fIxDt_rcPw
               - Authentication: NoAuthentication
                 Name: EWM-API
                 ProxyType: Internet
                 Type: HTTP
                 URL: https://sandbox.api.sap.com
+                URL.headers.APIKey: hzmSjfaCnGOVaq5pePbdvLp2gc7LFGPV
             existing_destinations_policy: update
         version: 1.0.0
       service: destination

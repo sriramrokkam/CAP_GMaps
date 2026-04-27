@@ -2,6 +2,27 @@ const cds = require('@sap/cds');
 const teamsNotify = require('./teams_notify');
 const QRCode      = require('qrcode');
 
+const GEOFENCE_RADIUS_M = parseInt(process.env.GEOFENCE_RADIUS_METERS || '500', 10);
+
+function haversineMeters(lat1, lng1, lat2, lng2) {
+    const R = 6_371_000;
+    const p1 = lat1 * Math.PI / 180, p2 = lat2 * Math.PI / 180;
+    const dp = (lat2 - lat1) * Math.PI / 180;
+    const dl = (lng2 - lng1) * Math.PI / 180;
+    const a = Math.sin(dp/2)**2 + Math.cos(p1)*Math.cos(p2)*Math.sin(dl/2)**2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+async function geocodeAddress(address) {
+    if (!address) return null;
+    try {
+        const googleApi = await cds.connect.to('GoogleAPI-SR');
+        const res = await googleApi.send({ method: 'GET', path: `/maps/api/geocode/json?address=${encodeURIComponent(address)}` });
+        const r = res && res.results && res.results[0];
+        return r ? { lat: r.geometry.location.lat, lng: r.geometry.location.lng } : null;
+    } catch (_) { return null; }
+}
+
 module.exports = class TrackingService extends cds.ApplicationService {
     async init() {
         const { DriverAssignment, Driver } = this.entities;
@@ -203,6 +224,37 @@ module.exports = class TrackingService extends cds.ApplicationService {
                             LastLat:     assignment.CurrentLat,
                             LastLng:     assignment.CurrentLng
                         });
+
+                        // Geofence check — alert if driver confirmed far from expected destination
+                        try {
+                            const route = await db.run(
+                                SELECT.one.from('gmaps_schema_RouteDirections')
+                                    .columns('destination')
+                                    .orderBy({ createdAt: 'desc' })
+                            );
+                            const destination = route && route.destination;
+                            if (destination && assignment.CurrentLat && assignment.CurrentLng) {
+                                const coords = await geocodeAddress(destination);
+                                if (coords) {
+                                    const distM = haversineMeters(
+                                        assignment.CurrentLat, assignment.CurrentLng,
+                                        coords.lat, coords.lng
+                                    );
+                                    if (distM > GEOFENCE_RADIUS_M) {
+                                        const distKm = (distM / 1000).toFixed(2);
+                                        await teamsNotify.post('GEOFENCE_ALERT', {
+                                            ...assignment,
+                                            DeliveredAt:    deliveredAt,
+                                            ShipToParty:    shipToParty,
+                                            Destination:    destination,
+                                            DistanceKm:     distKm,
+                                            ThresholdM:     GEOFENCE_RADIUS_M
+                                        });
+                                    }
+                                }
+                            }
+                        } catch (e) { console.error('Geofence check error:', e.message); }
+
                     } catch (e) { console.error('Teams DELIVERED notify error:', e.message); }
                 })();
 
